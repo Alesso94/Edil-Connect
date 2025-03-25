@@ -29,9 +29,12 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const MONGODB_URI = process.env.MONGODB_URI;
 
 // Connessione a MongoDB
-mongoose.connect(MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
+mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('Database connected successfully'))
+  .catch(err => {
+    console.error('Database connection error:', err);
+    process.exit(1); // Termina il server se la connessione fallisce
+  });
 
 // Crea le cartelle necessarie se non esistono
 const uploadDir = path.join(__dirname, 'uploads');
@@ -107,43 +110,43 @@ let users = [
 
 // API di autenticazione
 app.post('/api/auth/register', async (req, res) => {
-    try {
-        const { email, password, name, profession, license } = req.body;
+  try {
+    console.log('Dati ricevuti dal frontend:', req.body);
 
-        // Verifica se l'utente esiste già
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            return res.status(400).json({ message: 'Email già registrata' });
-        }
+    const { email, password, name, profession, license } = req.body;
 
-        // Crea nuovo utente
-        const user = new User({
-            email,
-            password,
-            name,
-            profession,
-            license,
-            role: 'professional'
-        });
-
-        // Genera token di verifica
-        const verificationToken = jwt.sign(
-            { userId: user._id },
-            process.env.JWT_SECRET,
-            { expiresIn: '24h' }
-        );
-
-        user.verificationToken = verificationToken;
-        user.verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
-        await user.save();
-
-        res.status(201).json({
-            message: 'Registrazione completata. Controlla la tua email per la verifica.',
-            verificationToken
-        });
-    } catch (error) {
-        res.status(500).json({ message: 'Errore durante la registrazione', error: error.message });
+    // Verifica se l'utente esiste già
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email già registrata' });
     }
+
+    // Crea un nuovo utente
+    const user = new User({
+      email,
+      password,
+      name,
+      profession,
+      license,
+      role: 'professional',
+    });
+
+    await user.save();
+
+    // Genera un token JWT
+    const token = jwt.sign(
+      { id: user._id, email: user.email, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' } // Il token scade in 1 ora
+    );
+
+    console.log('Token generato:', token); // Log del token generato
+
+    res.status(201).json({ message: 'Registrazione completata', token });
+  } catch (error) {
+    console.error('Errore durante la registrazione:', error);
+    res.status(500).json({ message: 'Errore durante la registrazione', error: error.message });
+  }
 });
 
 app.post('/api/auth/verify', async (req, res) => {
@@ -189,6 +192,26 @@ app.post('/api/auth/login', async (req, res) => {
     } catch (error) {
         res.status(401).json({ message: 'Credenziali non valide' });
     }
+});
+
+app.delete('/api/auth/delete-user', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email è obbligatoria' });
+    }
+
+    const result = await User.deleteOne({ email });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ message: 'Utente non trovato' });
+    }
+
+    res.status(200).json({ message: 'Utente eliminato con successo' });
+  } catch (error) {
+    console.error('Errore durante l\'eliminazione dell\'utente:', error);
+    res.status(500).json({ message: 'Errore durante l\'eliminazione dell\'utente' });
+  }
 });
 
 // Middleware di autenticazione
@@ -400,8 +423,8 @@ process.on('unhandledRejection', (error) => {
 });
 
 // Avvio del server
-const server = app.listen(port, '0.0.0.0', () => {
-    console.log(`Server is running on port ${port}`);
+const server = app.listen(port, () => {
+  console.log(`Server running on http://localhost:${port}`);
 });
 
 // Gestione chiusura graziosa
@@ -427,7 +450,7 @@ process.on('SIGINT', () => {
     // Definisci i dati dell'utente
     const email = "aless.pan79@gmail.com";       // Sostituisci con l'email dell'utente
     const password = "Ibanez94@";         // Sostituisci con la password dell'utente
-    const name = "Test User";               // Sostituisci con il nome dell'utente
+    const name = "Alessandro";               // Sostituisci con il nome dell'utente
     const profession = "Engineer";          // Sostituisci con la professione dell'utente
     const license = "12345";                // Sostituisci con la licenza dell'utente
 

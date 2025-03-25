@@ -2,22 +2,39 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import './Auth.css';
 
+console.log('Backend URL:', process.env.REACT_APP_BACKEND_URL);
+
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [profession, setProfession] = useState('');
+  const [license, setLicense] = useState(''); // Aggiungi lo stato per license
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
+    console.log('Dati inviati:', { email, password, name, profession, license });
+    console.log('Dati inviati al backend:', { email, password, name, profession, license });
+
     try {
-      const response = await axios.post('/api/users', { email, password, name, profession });
+      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/auth/register`, {
+        email,
+        password,
+        name,
+        profession,
+        license, // Includi license nella richiesta
+      });
+
+      // Salva il token nel localStorage
       localStorage.setItem('token', response.data.token);
+
+      // Reindirizza l'utente alla dashboard
       window.location.href = '/dashboard';
     } catch (err) {
+      console.error('Errore di registrazione:', err.response?.data || err.message);
       setError('Registrazione fallita. Riprova.');
     }
   };
@@ -53,6 +70,15 @@ const Auth = () => {
             </select>
           </div>
           <div className="form-group">
+            <label>Licenza</label>
+            <input
+              type="text"
+              value={license}
+              onChange={(e) => setLicense(e.target.value)} // Aggiungi l'input per license
+              required
+            />
+          </div>
+          <div className="form-group">
             <label>Email</label>
             <input
               type="email"
@@ -85,4 +111,4 @@ const Auth = () => {
   );
 };
 
-export default Auth; 
+export default Auth;

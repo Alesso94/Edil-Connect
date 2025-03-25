@@ -42,7 +42,7 @@ const userSchema = new mongoose.Schema({
     },
     license: {
         type: String,
-        required: function() { return this.role === 'professional'; }
+        required: true
     },
     // Campi specifici per utenti pubblici
     fiscalCode: {
@@ -120,4 +120,4 @@ userSchema.statics.findByCredentials = async (email, password) => {
 
 const User = mongoose.model('User', userSchema);
 
-module.exports = User; 
+module.exports = User;
