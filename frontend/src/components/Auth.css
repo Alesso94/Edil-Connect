@@ -1,0 +1,164 @@
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  padding: 20px;
+}
+
+.auth-box {
+  background: white;
+  padding: 40px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+}
+
+.auth-logo {
+  color: #1e3c72;
+  text-align: center;
+  font-size: 32px;
+  margin: 0 0 10px;
+  font-weight: bold;
+}
+
+.auth-box h3 {
+  margin: 0 0 20px;
+  color: #1e3c72;
+  text-align: center;
+  font-size: 24px;
+}
+
+.auth-box h2 {
+  margin: 0 0 20px;
+  color: #1e3c72;
+  text-align: center;
+  font-size: 24px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  color: #333;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #1e3c72;
+}
+
+.submit-button {
+  width: 100%;
+  padding: 12px;
+  background: #1e3c72;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.submit-button:hover {
+  background: #2a5298;
+}
+
+.error-message {
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 0.75rem;
+  border-radius: 5px;
+  margin-bottom: 1.5rem;
+}
+
+.success-message {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  padding: 0.75rem;
+  border-radius: 5px;
+  margin-bottom: 1.5rem;
+}
+
+.toggle-auth {
+  margin-top: 20px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.toggle-auth button {
+  background: none;
+  border: none;
+  color: #1e3c72;
+  cursor: pointer;
+  font-weight: 500;
+  padding: 0;
+  margin-left: 5px;
+}
+
+.toggle-auth button:hover {
+  text-decoration: underline;
+}
+
+.test-login-section {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f0f4ff;
+  border-radius: 5px;
+  text-align: center;
+}
+
+.test-login-button {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 500;
+  margin: 10px 0;
+  width: 100%;
+  transition: background-color 0.3s;
+}
+
+.test-login-button:hover {
+  background-color: #45a049;
+}
+
+.test-login-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.test-credentials {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.test-credentials p {
+  margin: 5px 0;
+}
+
+@media (max-width: 500px) {
+  .auth-box {
+    width: 90%;
+    padding: 20px;
+  }
+} 
