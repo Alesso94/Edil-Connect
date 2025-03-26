@@ -3,7 +3,7 @@
   command = "CI=false npm run build"
 
 [build.environment]
-  REACT_APP_BACKEND_URL = "https://api.edilconnect.it"
+  REACT_APP_BACKEND_URL = "https://edil-connect.onrender.com"
 
 [[redirects]]
   from = "/*"
