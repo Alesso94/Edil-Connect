@@ -92,7 +92,7 @@ const cadDir = path.join(uploadDir, 'cad');
 // Configurazione CORS
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.FRONTEND_URL, 'https://cerulean-rabanadas-040413.netlify.app']
+    ? [process.env.FRONTEND_URL, 'https://cerulean-rabanadas-040413.netlify.app', 'https://edilconnect.netlify.app']
     : ['http://localhost:3000', 'http://127.0.0.1:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
