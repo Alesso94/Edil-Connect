@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import Home from './components/Home';
 import Auth from './components/Auth';
@@ -8,7 +8,7 @@ import Settings from './components/Settings';
 import { LanguageProvider } from './contexts/LanguageContext';
 import './App.css';
 
-// Configurazione del router con future flags
+// Configurazione del router
 const router = createBrowserRouter([
   {
     path: "/",

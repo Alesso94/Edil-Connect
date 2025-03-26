@@ -42,7 +42,7 @@ const userSchema = new mongoose.Schema({
     },
     license: {
         type: String,
-        required: true
+        required: function() { return this.role === 'professional'; }
     },
     // Campi specifici per utenti pubblici
     fiscalCode: {

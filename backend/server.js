@@ -29,10 +29,12 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const MONGODB_URI = process.env.MONGODB_URI;
 
 // Connessione a MongoDB
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('Database connected successfully'))
+mongoose.connect(MONGODB_URI)
+  .then(() => {
+    console.log('Database connesso con successo');
+  })
   .catch(err => {
-    console.error('Database connection error:', err);
+    console.error('Errore di connessione al database:', err);
     process.exit(1); // Termina il server se la connessione fallisce
   });
 
@@ -44,7 +46,7 @@ const cadDir = path.join(uploadDir, 'cad');
 [uploadDir, documentsDir, cadDir].forEach(dir => {
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
-        console.log(`Created directory: ${dir}`);
+        console.log(`Directory creata: ${dir}`);
     }
 });
 
@@ -72,414 +74,31 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-// Database simulato
-let projects = [
-    {
-        id: 1,
-        title: 'Ristrutturazione Villa',
-        description: 'Ristrutturazione completa di una villa storica',
-        startDate: '2024-03-01',
-        endDate: '2024-06-30',
-        budget: 250000,
-        status: 'In Corso',
-        category: 'Ristrutturazione',
-        progress: 35,
-        tasks: [
-            { id: 1, name: 'Demolizione pareti', completed: true },
-            { id: 2, name: 'Rifacimento impianto elettrico', completed: false },
-            { id: 3, name: 'Pavimentazione', completed: false }
-        ]
-    }
-];
-
-let projectDocuments = {};
-let projectComments = {};
-let projectCadFiles = {};
-
-let users = [
-    {
-        id: 1,
-        email: 'admin@example.com',
-        password: bcrypt.hashSync('admin123', 10),
-        name: 'Admin',
-        role: 'professional',
-        profession: 'Architetto',
-        verified: true
-    }
-];
-
-// API di autenticazione
-app.post('/api/auth/register', async (req, res) => {
-  try {
-    console.log('Richiesta di registrazione ricevuta');
-    console.log('Headers:', req.headers);
-    console.log('Body:', req.body);
-
-    const { email, password, name, profession, license, adminCode } = req.body;
-
-    // Verifica se l'utente esiste già
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      console.log('Email già registrata:', email);
-      return res.status(400).json({ message: 'Email già registrata' });
-    }
-
-    // Verifica se è richiesta la registrazione come admin
-    let role = 'professional';
-    let isAdmin = false;
-    let isVerified = false;
-
-    if (adminCode) {
-      console.log('Codice admin fornito:', adminCode);
-      if (adminCode === process.env.ADMIN_CODE) {
-        console.log('Codice admin valido, registrazione come admin');
-        role = 'admin';
-        isAdmin = true;
-        isVerified = true; // Gli admin sono verificati automaticamente
-      } else {
-        console.log('Codice admin non valido');
-        return res.status(400).json({ message: 'Codice admin non valido' });
-      }
-    }
-
-    // Crea un nuovo utente
-    const user = new User({
-      email,
-      password,
-      name,
-      profession,
-      license,
-      role,
-      isAdmin,
-      isVerified
-    });
-
-    console.log('Tentativo di salvataggio utente:', { email, role, isAdmin, isVerified });
-    await user.save();
-    console.log('Utente salvato con successo');
-
-    // Genera un token JWT
-    const token = jwt.sign(
-      { id: user._id, email: user.email, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' }
-    );
-
-    console.log('Token generato con successo');
-
-    res.status(201).json({ 
-      message: isAdmin ? 'Registrazione admin completata' : 'Registrazione completata. Verifica la tua email.',
-      token,
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        isAdmin: user.isAdmin,
-        isVerified: user.isVerified
-      }
-    });
-  } catch (error) {
-    console.error('Errore dettagliato durante la registrazione:', error);
-    res.status(500).json({ 
-      message: 'Errore durante la registrazione', 
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
-  }
-});
-
-app.post('/api/auth/verify', async (req, res) => {
-    try {
-        const { token } = req.body;
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        
-        const user = await User.findOne({
-            _id: decoded.userId,
-            verificationToken: token,
-            verificationTokenExpires: { $gt: Date.now() }
-        });
-
-        if (!user) {
-            return res.status(400).json({ message: 'Token non valido o scaduto' });
-        }
-
-        user.isVerified = true;
-        user.verificationToken = undefined;
-        user.verificationTokenExpires = undefined;
-        await user.save();
-
-        res.json({ message: 'Email verificata con successo' });
-    } catch (error) {
-        res.status(400).json({ message: 'Errore durante la verifica', error: error.message });
-    }
-});
-
-app.post('/api/auth/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        const user = await User.findByCredentials(email, password);
-        
-        if (!user.isVerified) {
-            return res.status(403).json({ message: 'Account non verificato. Verifica la tua email.' });
-        }
-
-        const token = await user.generateAuthToken();
-        res.json({
-            user: user.toJSON(),
-            token
-        });
-    } catch (error) {
-        res.status(401).json({ message: 'Credenziali non valide' });
-    }
-});
-
-app.delete('/api/auth/delete-user', async (req, res) => {
-  try {
-    const { email } = req.body;
-
-    if (!email) {
-      return res.status(400).json({ message: 'Email è obbligatoria' });
-    }
-
-    const result = await User.deleteOne({ email });
-    if (result.deletedCount === 0) {
-      return res.status(404).json({ message: 'Utente non trovato' });
-    }
-
-    res.status(200).json({ message: 'Utente eliminato con successo' });
-  } catch (error) {
-    console.error('Errore durante l\'eliminazione dell\'utente:', error);
-    res.status(500).json({ message: 'Errore durante l\'eliminazione dell\'utente' });
-  }
-});
-
-// Middleware di autenticazione
-const authenticateToken = async (req, res, next) => {
-    try {
-        const authHeader = req.headers['authorization'];
-        const token = authHeader && authHeader.split(' ')[1];
-
-        if (!token) {
-            return res.status(401).json({ message: 'Token di autenticazione mancante' });
-        }
-
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findOne({ _id: decoded._id, 'tokens.token': token });
-
-        if (!user) {
-            throw new Error();
-        }
-
-        req.token = token;
-        req.user = user;
-        next();
-    } catch (error) {
-        res.status(403).json({ message: 'Token non valido' });
-    }
-};
-
-// Protezione delle API esistenti
-app.use('/api/auth', authRoutes);
-app.use('/api/projects', projectRoutes);
-app.use('/api/documents', documentRoutes);
-app.use('/api/projects/:id/documents', authenticateToken);
-app.use('/api/projects/:id/cad', authenticateToken);
-app.use('/api/projects/:id/comments', authenticateToken);
-
-// Rotte
+// Routes
 app.use('/api/users', usersRoutes);
 app.use('/api/projects', projectsRoutes);
 app.use('/api/documents', documentsRoutes);
 app.use('/api/professionals', professionalsRoutes);
 app.use('/api/settings', settingsRoutes);
 
-// Endpoint di test per verificare che il server sia raggiungibile
-app.get('/api', (req, res) => {
-  res.json({ message: 'API server is running' });
-});
-
-// API per i documenti
-app.post('/api/projects/:id/documents', authenticateToken, upload.array('files'), async (req, res) => {
-    try {
-        const project = await Project.findOne({ _id: req.params.id, owner: req.user._id });
-        if (!project) {
-            return res.status(404).json({ message: 'Progetto non trovato' });
-        }
-
-        const uploadedFiles = await Promise.all(req.files.map(async file => {
-            const document = new Document({
-                name: file.filename,
-                type: 'document',
-                originalName: file.originalname,
-                path: file.path,
-                size: file.size,
-                mimeType: file.mimetype,
-                project: project._id,
-                uploadedBy: req.user._id
-            });
-            await document.save();
-            return document;
-        }));
-
-        res.status(201).json(uploadedFiles);
-    } catch (error) {
-        res.status(400).json({ message: 'Errore nel caricamento dei documenti', error: error.message });
-    }
-});
-
-app.get('/api/projects/:id/documents', authenticateToken, async (req, res) => {
-    try {
-        const documents = await Document.find({
-            project: req.params.id,
-            type: 'document'
-        }).populate('uploadedBy', 'name email');
-        res.json(documents);
-    } catch (error) {
-        res.status(500).json({ message: 'Errore nel recupero dei documenti', error: error.message });
-    }
-});
-
-app.delete('/api/projects/:projectId/documents/:documentId', authenticateToken, async (req, res) => {
-    try {
-        const document = await Document.findOneAndDelete({
-            _id: req.params.documentId,
-            project: req.params.projectId,
-            uploadedBy: req.user._id
-        });
-
-        if (!document) {
-            return res.status(404).json({ message: 'Documento non trovato' });
-        }
-
-        // Elimina il file fisico
-        fs.unlink(document.path, (err) => {
-            if (err) console.error('Errore nell\'eliminazione del file:', err);
-        });
-
-        res.json({ message: 'Documento eliminato' });
-    } catch (error) {
-        res.status(500).json({ message: 'Errore nell\'eliminazione del documento', error: error.message });
-    }
-});
-
-// API per i file CAD
-app.post('/api/projects/:id/cad', authenticateToken, upload.array('files'), async (req, res) => {
-    try {
-        const project = await Project.findOne({ _id: req.params.id, owner: req.user._id });
-        if (!project) {
-            return res.status(404).json({ message: 'Progetto non trovato' });
-        }
-
-        const uploadedFiles = await Promise.all(req.files.map(async file => {
-            const document = new Document({
-                name: file.filename,
-                type: 'cad',
-                originalName: file.originalname,
-                path: file.path,
-                size: file.size,
-                mimeType: file.mimetype,
-                project: project._id,
-                uploadedBy: req.user._id
-            });
-            await document.save();
-            return document;
-        }));
-
-        res.status(201).json(uploadedFiles);
-    } catch (error) {
-        res.status(400).json({ message: 'Errore nel caricamento dei file CAD', error: error.message });
-    }
-});
-
-app.get('/api/projects/:id/cad', authenticateToken, async (req, res) => {
-    try {
-        const documents = await Document.find({
-            project: req.params.id,
-            type: 'cad'
-        }).populate('uploadedBy', 'name email');
-        res.json(documents);
-    } catch (error) {
-        res.status(500).json({ message: 'Errore nel recupero dei file CAD', error: error.message });
-    }
-});
-
-app.delete('/api/projects/:projectId/cad/:fileId', authenticateToken, async (req, res) => {
-    try {
-        const document = await Document.findOneAndDelete({
-            _id: req.params.fileId,
-            project: req.params.projectId,
-            type: 'cad',
-            uploadedBy: req.user._id
-        });
-
-        if (!document) {
-            return res.status(404).json({ message: 'File CAD non trovato' });
-        }
-
-        // Elimina il file fisico
-        fs.unlink(document.path, (err) => {
-            if (err) console.error('Errore nell\'eliminazione del file:', err);
-        });
-
-        res.json({ message: 'File CAD eliminato' });
-    } catch (error) {
-        res.status(500).json({ message: 'Errore nell\'eliminazione del file CAD', error: error.message });
-    }
-});
-
-// API per i commenti
-app.post('/api/projects/:id/comments', (req, res) => {
-    const projectId = parseInt(req.params.id);
-    const newComment = {
-        id: Date.now(),
-        text: req.body.text,
-        author: req.body.author || 'Utente',
-        date: new Date().toISOString()
-    };
-
-    projectComments[projectId] = [
-        ...(projectComments[projectId] || []),
-        newComment
-    ];
-    res.status(201).json(newComment);
-});
-
-app.get('/api/projects/:id/comments', (req, res) => {
-    const projectId = parseInt(req.params.id);
-    res.json(projectComments[projectId] || []);
-});
-
-// Cartella per i file caricati
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Gestione errori non catturati
-process.on('uncaughtException', (error) => {
-    console.error('Uncaught Exception:', error);
-});
-
-process.on('unhandledRejection', (error) => {
-    console.error('Unhandled Rejection:', error);
-});
-
 // Avvio del server
 const server = app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
 
-// Gestione chiusura graziosa
+// Gestione della chiusura del server
 process.on('SIGTERM', () => {
-    console.log('Received SIGTERM. Performing graceful shutdown...');
-    server.close(() => {
-        console.log('Server closed. Exiting process.');
-        process.exit(0);
-    });
+  console.log('SIGTERM ricevuto. Chiusura del server...');
+  server.close(() => {
+    console.log('Server chiuso');
+    process.exit(0);
+  });
 });
 
 process.on('SIGINT', () => {
-    console.log('Received SIGINT. Performing graceful shutdown...');
-    server.close(() => {
-        console.log('Server closed. Exiting process.');
-        process.exit(0);
-    });
+  console.log('SIGINT ricevuto. Chiusura del server...');
+  server.close(() => {
+    console.log('Server chiuso');
+    process.exit(0);
+  });
 });

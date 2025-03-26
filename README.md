@@ -1,6 +1,9 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 # Edil-Connect
 =======
+=======
+>>>>>>> 607b7d0e3d6eb5b25149c178d8fc686cda46b888
 # EdilPro Platform
 
 Piattaforma per la gestione di progetti edilizi e collaborazione tra professionisti.
@@ -37,5 +40,9 @@ L'applicazione sarà disponibile su http://localhost:3000
 ## Note
 - Assicurati che entrambi i server (frontend e backend) siano in esecuzione
 - La cartella `uploads` nel backend verrà creata automaticamente per i file caricati
+<<<<<<< HEAD
 - Per qualsiasi problema, contatta l'amministratore del progetto 
 >>>>>>> 607b7d0 (Initial commit after reinitializing repository)
+=======
+- Per qualsiasi problema, contatta l'amministratore del progetto 
+>>>>>>> 607b7d0e3d6eb5b25149c178d8fc686cda46b888
