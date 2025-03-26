@@ -127,14 +127,28 @@ router.post('/resend-verification', async (req, res) => {
 // POST /api/users/login - Login
 router.post('/login', async (req, res) => {
     try {
+        console.log('Richiesta di login ricevuta per email:', req.body.email);
+        
+        if (!req.body.email || !req.body.password) {
+            return res.status(400).json({
+                message: 'Email e password sono obbligatori'
+            });
+        }
+
         const user = await User.findByCredentials(req.body.email, req.body.password);
         const token = await user.generateAuthToken();
-        res.json({ user, token });
+        
+        console.log('Login completato con successo per:', req.body.email);
+        res.json({ 
+            user, 
+            token,
+            message: 'Login effettuato con successo'
+        });
     } catch (error) {
+        console.error('Errore durante il login:', error.message);
         res.status(401).json({ 
-            message: error.message === 'Please verify your email first' 
-                ? 'Verifica la tua email prima di accedere' 
-                : 'Credenziali non valide'
+            message: error.message,
+            error: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
 });

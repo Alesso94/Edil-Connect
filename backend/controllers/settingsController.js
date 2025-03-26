@@ -41,16 +41,26 @@ const updateUserSettings = async (req, res) => {
         console.log('Dati ricevuti per aggiornamento:', req.body);
         console.log('User ID per aggiornamento:', req.user._id);
         
-        const { notificationsEnabled, emailNotifications, language, theme } = req.body;
+        // Rimuovi eventuali campi non presenti nel modello
+        const allowedFields = [
+            'notificationsEnabled', 'emailNotifications', 'smsNotifications',
+            'projectUpdatesNotifications', 'deadlineNotifications', 'documentNotifications',
+            'language', 'theme', 'dateFormat', 'currencyFormat', 'measurementUnit',
+            'profileVisibility', 'showContactInfo', 'showPortfolio', 'twoFactorEnabled',
+            'calendarSync', 'googleDriveSync', 'dropboxSync',
+            'defaultPdfScale', 'autoSaveInterval', 'fileNamingConvention'
+        ];
+
+        const updateData = {};
+        allowedFields.forEach(field => {
+            if (req.body[field] !== undefined) {
+                updateData[field] = req.body[field];
+            }
+        });
         
         const settings = await UserSettings.findOneAndUpdate(
             { userId: req.user._id },
-            {
-                notificationsEnabled,
-                emailNotifications,
-                language,
-                theme
-            },
+            { $set: updateData },
             { new: true, upsert: true }
         );
         

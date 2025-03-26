@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -43,11 +43,7 @@ function Settings() {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        fetchSettings();
-    }, []);
-
-    const fetchSettings = async () => {
+    const fetchSettings = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             if (!token) {
@@ -58,7 +54,7 @@ function Settings() {
             }
 
             console.log('Richiesta impostazioni con token:', token);
-            const response = await axios.get('http://localhost:3001/api/settings', {
+            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/settings`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -82,7 +78,11 @@ function Settings() {
             }
             setLoading(false);
         }
-    };
+    }, [navigate]);
+
+    useEffect(() => {
+        fetchSettings();
+    }, [fetchSettings]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -106,7 +106,7 @@ function Settings() {
             }
 
             console.log('Invio aggiornamento impostazioni:', settings);
-            const response = await axios.put('http://localhost:3001/api/settings', settings, {
+            const response = await axios.put(`${process.env.REACT_APP_BACKEND_URL}/api/settings`, settings, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -171,7 +171,7 @@ function Settings() {
         return () => {
             // Non rimuoviamo le proprietà al dismount perché vogliamo che la risoluzione persista
         };
-    }, [settings.resolution]);
+    }, [settings]);
 
     // Stili CSS globali per il ridimensionamento
     useEffect(() => {

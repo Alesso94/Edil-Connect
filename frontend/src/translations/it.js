@@ -1,4 +1,4 @@
-export default {
+const it = {
     navbar: {
         logo: 'EdilConnect',
         myProjects: 'I Miei Progetti',
@@ -73,4 +73,6 @@ export default {
             sessionExpired: 'Sessione scaduta. Effettua nuovamente il login.'
         }
     }
-}; 
+};
+
+export default it; 

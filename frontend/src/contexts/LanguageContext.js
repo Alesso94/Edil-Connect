@@ -2,8 +2,6 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import it from '../translations/it';
 import en from '../translations/en';
 
-const translations = { it, en };
-
 const LanguageContext = createContext();
 
 export const useLanguage = () => {

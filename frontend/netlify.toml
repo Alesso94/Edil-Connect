@@ -1,20 +1,22 @@
 [build]
-<<<<<<< HEAD
-  command = "npm run build"
-=======
-  base = "frontend"
-  command = "CI=false npm run build"
->>>>>>> 607b7d0e3d6eb5b25149c178d8fc686cda46b888
   publish = "build"
+  command = "CI=false npm run build"
+
+[build.environment]
+  REACT_APP_BACKEND_URL = "https://api.edilconnect.it"
 
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-<<<<<<< HEAD
-
-[build.environment]
-  REACT_APP_BACKEND_URL = "https://edilconnect-backend.herokuapp.com" # Questo URL dovrà essere aggiornato con il tuo backend effettivo
-=======
   force = true
->>>>>>> 607b7d0e3d6eb5b25149c178d8fc686cda46b888
+
+[[headers]]
+  for = "/*"
+    [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/static/*"
+    [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

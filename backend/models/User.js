@@ -104,17 +104,28 @@ userSchema.methods.toJSON = function () {
 
 // Trova utente per credenziali
 userSchema.statics.findByCredentials = async (email, password) => {
+    console.log('Tentativo di login per email:', email);
     const user = await User.findOne({ email });
+    
     if (!user) {
-        throw new Error('Invalid login credentials');
+        console.log('Utente non trovato per email:', email);
+        throw new Error('Email non trovata');
     }
+
+    console.log('Utente trovato, verifica password...');
     const isMatch = await bcrypt.compare(password, user.password);
+    
     if (!isMatch) {
-        throw new Error('Invalid login credentials');
+        console.log('Password non valida per utente:', email);
+        throw new Error('Password non valida');
     }
+
     if (!user.isVerified) {
-        throw new Error('Please verify your email first');
+        console.log('Utente non verificato:', email);
+        throw new Error('Verifica la tua email prima di accedere');
     }
+
+    console.log('Login riuscito per utente:', email);
     return user;
 };
 
