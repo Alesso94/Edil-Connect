@@ -29,7 +29,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const MONGODB_URI = process.env.MONGODB_URI;
 
 // Connessione a MongoDB
-mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('Database connected successfully'))
   .catch(err => {
     console.error('Database connection error:', err);
@@ -111,14 +111,35 @@ let users = [
 // API di autenticazione
 app.post('/api/auth/register', async (req, res) => {
   try {
-    console.log('Dati ricevuti dal frontend:', req.body);
+    console.log('Richiesta di registrazione ricevuta');
+    console.log('Headers:', req.headers);
+    console.log('Body:', req.body);
 
-    const { email, password, name, profession, license } = req.body;
+    const { email, password, name, profession, license, adminCode } = req.body;
 
     // Verifica se l'utente esiste già
     const existingUser = await User.findOne({ email });
     if (existingUser) {
+      console.log('Email già registrata:', email);
       return res.status(400).json({ message: 'Email già registrata' });
+    }
+
+    // Verifica se è richiesta la registrazione come admin
+    let role = 'professional';
+    let isAdmin = false;
+    let isVerified = false;
+
+    if (adminCode) {
+      console.log('Codice admin fornito:', adminCode);
+      if (adminCode === process.env.ADMIN_CODE) {
+        console.log('Codice admin valido, registrazione come admin');
+        role = 'admin';
+        isAdmin = true;
+        isVerified = true; // Gli admin sono verificati automaticamente
+      } else {
+        console.log('Codice admin non valido');
+        return res.status(400).json({ message: 'Codice admin non valido' });
+      }
     }
 
     // Crea un nuovo utente
@@ -128,24 +149,43 @@ app.post('/api/auth/register', async (req, res) => {
       name,
       profession,
       license,
-      role: 'professional',
+      role,
+      isAdmin,
+      isVerified
     });
 
+    console.log('Tentativo di salvataggio utente:', { email, role, isAdmin, isVerified });
     await user.save();
+    console.log('Utente salvato con successo');
 
     // Genera un token JWT
     const token = jwt.sign(
       { id: user._id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' } // Il token scade in 1 ora
+      { expiresIn: '1h' }
     );
 
-    console.log('Token generato:', token); // Log del token generato
+    console.log('Token generato con successo');
 
-    res.status(201).json({ message: 'Registrazione completata', token });
+    res.status(201).json({ 
+      message: isAdmin ? 'Registrazione admin completata' : 'Registrazione completata. Verifica la tua email.',
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        isAdmin: user.isAdmin,
+        isVerified: user.isVerified
+      }
+    });
   } catch (error) {
-    console.error('Errore durante la registrazione:', error);
-    res.status(500).json({ message: 'Errore durante la registrazione', error: error.message });
+    console.error('Errore dettagliato durante la registrazione:', error);
+    res.status(500).json({ 
+      message: 'Errore durante la registrazione', 
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
@@ -443,27 +483,3 @@ process.on('SIGINT', () => {
         process.exit(0);
     });
 });
-
-// Assicurati che l'URL punti all'endpoint corretto
-(async () => {
-  try {
-    // Definisci i dati dell'utente
-    const email = "aless.pan79@gmail.com";       // Sostituisci con l'email dell'utente
-    const password = "Ibanez94@";         // Sostituisci con la password dell'utente
-    const name = "Alessandro";               // Sostituisci con il nome dell'utente
-    const profession = "Engineer";          // Sostituisci con la professione dell'utente
-    const license = "12345";                // Sostituisci con la licenza dell'utente
-
-    // Effettua la richiesta al backend
-    const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/auth/register`, {
-      email,
-      password,
-      name,
-      profession,
-      license,
-    });
-    console.log('Registration response:', response.data);
-  } catch (error) {
-    console.error('Registration error:', error.response?.data || error.message);
-  }
-})();

@@ -9,33 +9,55 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [profession, setProfession] = useState('');
-  const [license, setLicense] = useState(''); // Aggiungi lo stato per license
+  const [license, setLicense] = useState('');
+  const [adminCode, setAdminCode] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-
-    console.log('Dati inviati:', { email, password, name, profession, license });
-    console.log('Dati inviati al backend:', { email, password, name, profession, license });
+    setLoading(true);
+    setSuccess(false);
 
     try {
-      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/auth/register`, {
+      console.log('Backend URL:', process.env.REACT_APP_BACKEND_URL);
+      console.log('Dati inviati:', { email, password, name, profession, license, adminCode });
+
+      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/users`, {
         email,
         password,
         name,
         profession,
-        license, // Includi license nella richiesta
+        license,
+        adminCode: adminCode || undefined
       });
+
+      console.log('Risposta dal server:', response.data);
+      setSuccess(true);
 
       // Salva il token nel localStorage
       localStorage.setItem('token', response.data.token);
 
-      // Reindirizza l'utente alla dashboard
-      window.location.href = '/dashboard';
+      // Reindirizza l'utente alla dashboard dopo un breve delay
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 1500);
+
     } catch (err) {
-      console.error('Errore di registrazione:', err.response?.data || err.message);
-      setError('Registrazione fallita. Riprova.');
+      console.error('Errore completo:', err);
+      console.error('Risposta del server:', err.response?.data);
+      
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.message) {
+        setError(err.message);
+      } else {
+        setError('Errore di registrazione. Controlla la console per i dettagli.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -45,6 +67,7 @@ const Auth = () => {
         <h2 className="auth-logo">EdilConnect</h2>
         <h3>Registrati</h3>
         {error && <div className="error-message">{error}</div>}
+        {success && <div className="success-message">Registrazione completata! Reindirizzamento in corso...</div>}
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Nome</label>
@@ -53,6 +76,7 @@ const Auth = () => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
+              disabled={loading}
             />
           </div>
           <div className="form-group">
@@ -61,6 +85,7 @@ const Auth = () => {
               value={profession}
               onChange={(e) => setProfession(e.target.value)}
               required
+              disabled={loading}
             >
               <option value="">Seleziona una professione</option>
               <option value="Architetto">Architetto</option>
@@ -74,8 +99,9 @@ const Auth = () => {
             <input
               type="text"
               value={license}
-              onChange={(e) => setLicense(e.target.value)} // Aggiungi l'input per license
+              onChange={(e) => setLicense(e.target.value)}
               required
+              disabled={loading}
             />
           </div>
           <div className="form-group">
@@ -85,6 +111,7 @@ const Auth = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              disabled={loading}
             />
           </div>
           <div className="form-group">
@@ -94,10 +121,21 @@ const Auth = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              disabled={loading}
             />
           </div>
-          <button type="submit" className="submit-button">
-            Registrati
+          <div className="form-group">
+            <label>Codice Admin (opzionale)</label>
+            <input
+              type="password"
+              value={adminCode}
+              onChange={(e) => setAdminCode(e.target.value)}
+              placeholder="Inserisci il codice admin per registrarti come amministratore"
+              disabled={loading}
+            />
+          </div>
+          <button type="submit" className="submit-button" disabled={loading}>
+            {loading ? 'Registrazione in corso...' : 'Registrati'}
           </button>
         </form>
         <p className="toggle-auth">

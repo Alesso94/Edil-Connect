@@ -7,14 +7,18 @@ const { generateVerificationToken, sendVerificationEmail } = require('../utils/e
 // POST /api/users - Registrazione
 router.post('/', async (req, res) => {
     try {
+        console.log('Richiesta di registrazione ricevuta:', req.body);
         const userData = { ...req.body };
         
         // Verifica se è richiesta la registrazione come admin
         if (userData.adminCode) {
+            console.log('Codice admin fornito:', userData.adminCode);
             if (userData.adminCode === process.env.ADMIN_CODE) {
+                console.log('Codice admin valido, registrazione come admin');
                 userData.isAdmin = true;
                 userData.isVerified = true; // Gli admin sono verificati automaticamente
             } else {
+                console.log('Codice admin non valido');
                 return res.status(400).json({ message: 'Codice admin non valido' });
             }
             delete userData.adminCode;
@@ -28,8 +32,10 @@ router.post('/', async (req, res) => {
             userData.verificationTokenExpires = tokenExpires;
         }
 
+        console.log('Creazione utente con dati:', { ...userData, password: '[HIDDEN]' });
         const user = new User(userData);
         await user.save();
+        console.log('Utente salvato con successo');
 
         // Invia email di verifica per utenti non admin
         if (!userData.isAdmin) {
@@ -52,7 +58,12 @@ router.post('/', async (req, res) => {
             message: userData.isAdmin ? 'Registrazione completata' : 'Registrazione completata. Controlla la tua email per verificare l\'account.'
         });
     } catch (error) {
-        res.status(400).json({ message: 'Errore nella registrazione' });
+        console.error('Errore dettagliato durante la registrazione:', error);
+        res.status(400).json({ 
+            message: 'Errore nella registrazione',
+            error: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     }
 });
 

@@ -1,10 +1,11 @@
 [build]
-  base = "frontend"
-  command = "CI=false npm run build"
+  command = "npm run build"
   publish = "build"
 
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-  force = true
+
+[build.environment]
+  REACT_APP_BACKEND_URL = "https://edilconnect-backend.herokuapp.com" # Questo URL dovrà essere aggiornato con il tuo backend effettivo
