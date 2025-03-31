@@ -272,7 +272,7 @@ const Home = () => {
                     border: '1px solid rgba(255, 255, 255, 0.3)'
                 }}>
                     <Typography variant="h4" component="h2" sx={{ color: 'white', mb: 3 }}>
-                        Pronto a Crescere il Tuo Business?
+                        Pronto a Far Crescere il Tuo Business?
                     </Typography>
                     <Typography variant="h6" sx={{ color: 'rgba(255, 255, 255, 0.9)', mb: 2 }}>
                         Accedi a tutti i servizi premium di EdilConnect con un abbonamento annuale
