@@ -1,86 +1,66 @@
 import React, { useState } from 'react';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import {
-    Container,
-    Box,
-    Typography,
-    TextField,
-    Button,
-    Link,
-    Paper,
-    Alert
-} from '@mui/material';
-import axios from 'axios';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Container, Paper, TextField, Button, Typography, Box, Alert } from '@mui/material';
+import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
-    const navigate = useNavigate();
-    const [formData, setFormData] = useState({
-        email: '',
-        password: ''
-    });
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-
-    const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
-    };
+    const [isLoading, setIsLoading] = useState(false);
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { login } = useAuth();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-
+        setIsLoading(true);
+        
         try {
-            const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/auth/login`, formData);
-            localStorage.setItem('token', response.data.token);
-            localStorage.setItem('user', JSON.stringify(response.data.user));
-            navigate('/dashboard');
+            console.log('Tentativo di login...');
+            console.log('Email:', email);
+            console.log('URL backend:', process.env.REACT_APP_BACKEND_URL);
+            
+            const response = await login(email, password);
+            console.log('Login riuscito:', response);
+            
+            // Dopo il login, reindirizza alla pagina precedente o alla dashboard
+            const from = location.state?.from || '/dashboard';
+            console.log('Reindirizzamento a:', from);
+            navigate(from, { replace: true });
         } catch (err) {
-            setError(err.response?.data?.message || 'Errore durante il login');
+            console.error('Errore durante il login:', err);
+            console.error('Risposta del server:', err.response?.data);
+            console.error('Status code:', err.response?.status);
+            console.error('Headers:', err.response?.headers);
+            
+            if (err.response?.status === 401) {
+                setError('Credenziali non valide. Controlla email e password.');
+            } else if (err.response?.status === 404) {
+                setError('Utente non trovato.');
+            } else if (err.response?.status === 500) {
+                setError('Errore del server. Riprova più tardi.');
+            } else if (!err.response) {
+                setError('Impossibile connettersi al server. Controlla la connessione.');
+            } else {
+                setError(err.response?.data?.message || 'Errore durante il login. Controlla le credenziali.');
+            }
+        } finally {
+            setIsLoading(false);
         }
     };
 
     return (
-        <Box
-            sx={{
-                minHeight: 'calc(100vh - 64px)',
-                backgroundImage: 'url("/images/background.jpg")',
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                display: 'flex',
-                alignItems: 'center',
-                position: 'relative'
-            }}
-        >
-            <Box
-                sx={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                }}
-            />
-            <Container maxWidth="sm" sx={{ position: 'relative', zIndex: 1 }}>
-                <Paper 
-                    elevation={3} 
-                    sx={{ 
-                        p: 4, 
-                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                        borderRadius: 2
-                    }}
-                >
-                    <Typography variant="h4" component="h1" align="center" gutterBottom>
+        <Container maxWidth="sm">
+            <Box sx={{ mt: 8, mb: 4 }}>
+                <Paper elevation={3} sx={{ p: 4 }}>
+                    <Typography variant="h4" component="h1" gutterBottom align="center">
                         Accedi
                     </Typography>
-                    <Typography variant="body1" align="center" color="textSecondary" sx={{ mb: 3 }}>
-                        Inserisci le tue credenziali per accedere
-                    </Typography>
-
+                    
                     {error && (
-                        <Alert severity="error" sx={{ mb: 3 }}>
+                        <Alert severity="error" sx={{ mb: 2 }}>
                             {error}
                         </Alert>
                     )}
@@ -89,44 +69,36 @@ const Login = () => {
                         <TextField
                             fullWidth
                             label="Email"
-                            name="email"
                             type="email"
-                            value={formData.email}
-                            onChange={handleChange}
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            margin="normal"
                             required
-                            sx={{ mb: 2 }}
+                            disabled={isLoading}
                         />
                         <TextField
                             fullWidth
                             label="Password"
-                            name="password"
                             type="password"
-                            value={formData.password}
-                            onChange={handleChange}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            margin="normal"
                             required
-                            sx={{ mb: 3 }}
+                            disabled={isLoading}
                         />
                         <Button
                             type="submit"
                             fullWidth
                             variant="contained"
-                            size="large"
-                            sx={{ mb: 2 }}
+                            sx={{ mt: 3 }}
+                            disabled={isLoading}
                         >
-                            Accedi
+                            {isLoading ? 'Accesso in corso...' : 'Accedi'}
                         </Button>
-                        <Box sx={{ textAlign: 'center' }}>
-                            <Typography variant="body2" color="textSecondary">
-                                Non hai un account?{' '}
-                                <Link component={RouterLink} to="/register" color="primary">
-                                    Registrati
-                                </Link>
-                            </Typography>
-                        </Box>
                     </form>
                 </Paper>
-            </Container>
-        </Box>
+            </Box>
+        </Container>
     );
 };
 

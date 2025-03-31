@@ -1,81 +1,146 @@
-import React from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import Logo from './Logo';
-import './Navbar.css';
+import React, { useState } from 'react';
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
+import {
+    AppBar,
+    Toolbar,
+    Typography,
+    IconButton,
+    Menu,
+    MenuItem,
+    Avatar,
+    useTheme,
+    useMediaQuery
+} from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import { useAuth } from '../context/AuthContext';
+import '../styles/UserButton.css';
 
 const Navbar = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const isHome = location.pathname === '/';
-  const isAuthenticated = localStorage.getItem('token') !== null;
+    const { user, logout } = useAuth();
+    const [anchorEl, setAnchorEl] = useState(null);
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const location = useLocation();
+    const navigate = useNavigate();
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/login');
-  };
+    const hiddenPaths = ['/dashboard'];
 
-  return (
-    <nav className="navbar">
-      <div className="navbar-brand">
-        <Link to="/">
-          <Logo width="150" height="40" />
-        </Link>
-      </div>
-      {isHome ? (
-        <div className="navbar-menu">
-          <a href="#servizi" className="navbar-item">
-            <i className="fas fa-tools"></i>
-            SERVIZI
-          </a>
-          <a href="#funzionalita" className="navbar-item">
-            <i className="fas fa-list-ul"></i>
-            FUNZIONALITÀ
-          </a>
-          <a href="#chi-siamo" className="navbar-item">
-            <i className="fas fa-info-circle"></i>
-            CHI SIAMO
-          </a>
-          {isAuthenticated ? (
-            <Link to="/dashboard" className="navbar-item">
-              <i className="fas fa-chart-line"></i>
-              DASHBOARD
-            </Link>
-          ) : (
-            <>
-              <Link to="/login" className="navbar-item">
-                <i className="fas fa-sign-in-alt"></i>
-                ACCEDI
-              </Link>
-              <Link to="/register" className="navbar-item register-button">
-                <i className="fas fa-user-plus"></i>
-                REGISTRATI
-              </Link>
-            </>
-          )}
-        </div>
-      ) : (
-        <div className="navbar-menu">
-          <Link to="/dashboard" className="navbar-item">
-            <i className="fas fa-chart-line"></i>
-            DASHBOARD
-          </Link>
-          <Link to="/subscriptions" className="navbar-item">
-            <i className="fas fa-credit-card"></i>
-            ABBONAMENTI
-          </Link>
-          <Link to="/profile" className="navbar-item">
-            <i className="fas fa-user-circle"></i>
-            PROFILO
-          </Link>
-          <button onClick={handleLogout} className="navbar-item logout-button">
-            <i className="fas fa-sign-out-alt"></i>
-            LOGOUT
-          </button>
-        </div>
-      )}
-    </nav>
-  );
+    if (hiddenPaths.includes(location.pathname)) {
+        return null;
+    }
+
+    const handleMenu = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleClose = () => {
+        setAnchorEl(null);
+    };
+
+    const handleLogout = () => {
+        logout();
+        handleClose();
+    };
+
+    const getInitials = () => {
+        if (user?.name) {
+            return user.name.charAt(0).toUpperCase();
+        } else if (user?.email) {
+            return user.email.charAt(0).toUpperCase();
+        }
+        return '';
+    };
+
+    return (
+        <AppBar position="static">
+            <Toolbar>
+                <Typography
+                    variant="h6"
+                    component={RouterLink}
+                    to="/"
+                    sx={{
+                        flexGrow: 1,
+                        textDecoration: 'none',
+                        color: 'inherit'
+                    }}
+                >
+                    EdilConnect
+                </Typography>
+
+                {user ? (
+                    <>
+                        <IconButton
+                            onClick={handleMenu}
+                            color="inherit"
+                            className="user-button"
+                            aria-label="menu utente"
+                        >
+                            <Avatar className="avatar">
+                                {getInitials()}
+                            </Avatar>
+                        </IconButton>
+                        <Menu
+                            anchorEl={anchorEl}
+                            open={Boolean(anchorEl)}
+                            onClose={handleClose}
+                        >
+                            <MenuItem component={RouterLink} to="/dashboard">Dashboard</MenuItem>
+                            <MenuItem component={RouterLink} to="/documents">Documenti</MenuItem>
+                            <MenuItem component={RouterLink} to="/projects">Progetti</MenuItem>
+                            <MenuItem component={RouterLink} to="/profile">Profilo</MenuItem>
+                            <MenuItem component={RouterLink} to="/subscription">Piani Tariffari</MenuItem>
+                            {(user.role === 'admin' || user.isAdmin) && (
+                                <MenuItem component={RouterLink} to="/admin">
+                                    Pannello Admin
+                                </MenuItem>
+                            )}
+                            <MenuItem onClick={handleLogout}>Logout</MenuItem>
+                        </Menu>
+                    </>
+                ) : (
+                    isMobile ? (
+                        <>
+                            <IconButton
+                                edge="end"
+                                color="inherit"
+                                aria-label="menu"
+                                onClick={handleMenu}
+                            >
+                                <MenuIcon />
+                            </IconButton>
+                            <Menu
+                                anchorEl={anchorEl}
+                                open={Boolean(anchorEl)}
+                                onClose={handleClose}
+                            >
+                                <MenuItem component={RouterLink} to="/login">Accedi</MenuItem>
+                                <MenuItem component={RouterLink} to="/register">Registrati</MenuItem>
+                            </Menu>
+                        </>
+                    ) : (
+                        <>
+                            <IconButton
+                                edge="end"
+                                color="inherit"
+                                aria-label="menu"
+                                onClick={handleMenu}
+                            >
+                                <MenuIcon />
+                            </IconButton>
+                            <Menu
+                                anchorEl={anchorEl}
+                                open={Boolean(anchorEl)}
+                                onClose={handleClose}
+                            >
+                                <MenuItem component={RouterLink} to="/login">Accedi</MenuItem>
+                                <MenuItem component={RouterLink} to="/register">Registrati</MenuItem>
+                            </Menu>
+                        </>
+                    )
+                )}
+            </Toolbar>
+        </AppBar>
+    );
 };
 
 export default Navbar; 

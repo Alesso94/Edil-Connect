@@ -5,10 +5,27 @@ import {
     Box,
     Grid,
     Card,
-    CardContent,
     Button,
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
+import ConstructionIcon from '@mui/icons-material/Construction';
+import EngineeringIcon from '@mui/icons-material/Engineering';
+import BusinessIcon from '@mui/icons-material/Business';
+import GroupIcon from '@mui/icons-material/Group';
+import TaskAltIcon from '@mui/icons-material/TaskAlt';
+import DescriptionIcon from '@mui/icons-material/Description';
+import SecurityIcon from '@mui/icons-material/Security';
+import SpeedIcon from '@mui/icons-material/Speed';
+import SupportAgentIcon from '@mui/icons-material/SupportAgent';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import TimelineIcon from '@mui/icons-material/Timeline';
+import AnalyticsIcon from '@mui/icons-material/Analytics';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import GroupWorkIcon from '@mui/icons-material/GroupWork';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import LockIcon from '@mui/icons-material/Lock';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 
 const Services = () => {
     const services = [
@@ -74,6 +91,53 @@ const Services = () => {
         }
     ];
 
+    const cardStyle = {
+        height: '500px',
+        display: 'flex',
+        flexDirection: 'column',
+        transition: 'transform 0.2s, box-shadow 0.2s',
+        '&:hover': {
+            transform: 'translateY(-4px)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+        }
+    };
+
+    const mediaStyle = {
+        height: '120px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'primary.main',
+        color: 'white',
+        padding: '0 16px'
+    };
+
+    const contentStyle = {
+        height: '380px',
+        padding: '16px',
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: 'background.paper'
+    };
+
+    const descriptionStyle = {
+        height: '80px',
+        marginBottom: '16px',
+        overflow: 'hidden',
+        display: '-webkit-box',
+        WebkitLineClamp: 2,
+        WebkitBoxOrient: 'vertical',
+        textOverflow: 'ellipsis'
+    };
+
+    const featureListStyle = {
+        height: '284px', // 380px - 80px (descrizione) - 16px (margin)
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        overflow: 'hidden'
+    };
+
     return (
         <Box sx={{ py: 8, backgroundColor: '#f5f5f5' }}>
             <Container maxWidth="lg">
@@ -106,28 +170,19 @@ const Services = () => {
                     {services.map((service, index) => (
                         <Grid item key={index}>
                             <Card 
-                                sx={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    height: '100%',
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
-                                }}
+                                sx={cardStyle}
                             >
                                 {/* Title Section */}
                                 <Box 
-                                    sx={{
-                                        bgcolor: 'primary.main',
-                                        color: 'white',
-                                        p: 2,
-                                        textAlign: 'center'
-                                    }}
+                                    sx={mediaStyle}
                                 >
                                     <Typography 
                                         variant="h5"
                                         sx={{
                                             fontWeight: 600,
                                             fontSize: '1.4rem',
-                                            lineHeight: 1.2
+                                            lineHeight: 1.2,
+                                            textAlign: 'center'
                                         }}
                                     >
                                         {service.title}
@@ -136,33 +191,19 @@ const Services = () => {
 
                                 {/* Content Section */}
                                 <Box 
-                                    sx={{
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        p: 3,
-                                        flexGrow: 1,
-                                        bgcolor: 'background.paper'
-                                    }}
+                                    sx={contentStyle}
                                 >
                                     {/* Description */}
                                     <Typography 
                                         variant="body1"
-                                        sx={{
-                                            mb: 3,
-                                            color: 'text.primary',
-                                            lineHeight: 1.4
-                                        }}
+                                        sx={descriptionStyle}
                                     >
                                         {service.description}
                                     </Typography>
 
                                     {/* Features */}
                                     <Box 
-                                        sx={{
-                                            display: 'grid',
-                                            gridTemplateColumns: 'repeat(2, 1fr)',
-                                            gap: 2
-                                        }}
+                                        sx={featureListStyle}
                                     >
                                         {service.features.map((feature, idx) => (
                                             <Box 

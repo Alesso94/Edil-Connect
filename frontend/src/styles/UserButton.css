@@ -1,0 +1,93 @@
+.btn-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-user:hover {
+  background: #f5f5f5;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-button {
+  margin-left: auto;
+}
+
+/* Stili per il FloatingAvatar */
+.floating-avatar {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.floating-button {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: #1976d2;
+  border: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.floating-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.floating-avatar-img {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid white;
+}
+
+.floating-menu {
+  position: absolute;
+  top: 60px;
+  right: 0;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+}
+
+.floating-menu button {
+  background: none;
+  border: none;
+  padding: 12px 16px;
+  text-align: left;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.2s;
+  color: #333;
+}
+
+.floating-menu button:hover {
+  background-color: #f5f5f5;
+}
+
+.floating-menu button:not(:last-child) {
+  border-bottom: 1px solid #eee;
+}
