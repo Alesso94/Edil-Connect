@@ -3,9 +3,10 @@ const router = express.Router();
 const User = require('../models/User');
 const auth = require('../middleware/auth');
 const { generateVerificationToken, sendVerificationEmail } = require('../utils/emailService');
+const jwt = require('jsonwebtoken');
 
-// POST /api/users - Registrazione
-router.post('/', async (req, res) => {
+// POST /api/users/register - Registrazione
+router.post('/register', async (req, res) => {
     try {
         console.log('Richiesta di registrazione ricevuta:', req.body);
         const userData = { ...req.body };
@@ -127,15 +128,21 @@ router.post('/resend-verification', async (req, res) => {
 // POST /api/users/login - Login
 router.post('/login', async (req, res) => {
     try {
-        console.log('Richiesta di login ricevuta per email:', req.body.email);
+        console.log('Richiesta di login ricevuta:', {
+            email: req.body.email,
+            hasPassword: !!req.body.password
+        });
         
         if (!req.body.email || !req.body.password) {
+            console.log('Email o password mancanti');
             return res.status(400).json({
                 message: 'Email e password sono obbligatori'
             });
         }
 
+        console.log('Cerco utente nel database...');
         const user = await User.findByCredentials(req.body.email, req.body.password);
+        console.log('Utente trovato, genero token...');
         const token = await user.generateAuthToken();
         
         console.log('Login completato con successo per:', req.body.email);
@@ -145,9 +152,12 @@ router.post('/login', async (req, res) => {
             message: 'Login effettuato con successo'
         });
     } catch (error) {
-        console.error('Errore durante il login:', error.message);
-        res.status(401).json({ 
+        console.error('Errore dettagliato durante il login:', {
             message: error.message,
+            stack: error.stack
+        });
+        res.status(401).json({ 
+            message: error.message || 'Credenziali non valide',
             error: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
@@ -189,6 +199,100 @@ router.patch('/me', auth, async (req, res) => {
         res.json(req.user);
     } catch (error) {
         res.status(400).json({ message: 'Errore nell\'aggiornamento del profilo' });
+    }
+});
+
+// GET /api/users/profile - Ottieni il profilo dell'utente autenticato
+router.get('/profile', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id)
+            .select('-password -tokens -verificationToken -verificationTokenExpires');
+        
+        if (!user) {
+            return res.status(404).json({ message: 'Utente non trovato' });
+        }
+
+        res.json(user);
+    } catch (error) {
+        console.error('Errore nel recupero del profilo:', error);
+        res.status(500).json({ error: 'Errore nel recupero del profilo' });
+    }
+});
+
+// PUT /api/users/profile - Aggiorna il profilo dell'utente
+router.put('/profile', auth, async (req, res) => {
+    const updates = Object.keys(req.body);
+    const allowedUpdates = ['name', 'email', 'contactInfo'];
+    const isValidOperation = updates.every(update => allowedUpdates.includes(update));
+
+    if (!isValidOperation) {
+        return res.status(400).json({ error: 'Campi non validi per l\'aggiornamento' });
+    }
+
+    try {
+        updates.forEach(update => {
+            if (update === 'contactInfo') {
+                Object.keys(req.body.contactInfo).forEach(key => {
+                    req.user.contactInfo[key] = req.body.contactInfo[key];
+                });
+            } else {
+                req.user[update] = req.body[update];
+            }
+        });
+
+        await req.user.save();
+        res.json(req.user);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// Endpoint temporaneo per eliminare tutti gli utenti (solo per test)
+router.delete('/delete-all', async (req, res) => {
+    try {
+        await User.deleteMany({});
+        res.json({ message: 'Tutti gli utenti sono stati eliminati' });
+    } catch (error) {
+        console.error('Errore nell\'eliminazione degli utenti:', error);
+        res.status(500).json({ message: 'Errore nell\'eliminazione degli utenti' });
+    }
+});
+
+// POST /api/users/refresh-token - Refresh token
+router.post('/refresh-token', async (req, res) => {
+    try {
+        const { refreshToken } = req.body;
+        
+        if (!refreshToken) {
+            return res.status(400).json({ message: 'Refresh token mancante' });
+        }
+
+        // Verifica il refresh token
+        const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+        const user = await User.findOne({ 
+            _id: decoded._id,
+            'tokens.refreshToken': refreshToken
+        });
+
+        if (!user) {
+            return res.status(401).json({ message: 'Refresh token non valido' });
+        }
+
+        // Genera nuovi token
+        const { token: newToken, refreshToken: newRefreshToken } = await user.generateAuthToken();
+
+        // Rimuovi il vecchio refresh token
+        user.tokens = user.tokens.filter(t => t.refreshToken !== refreshToken);
+        await user.save();
+
+        res.json({ 
+            token: newToken,
+            refreshToken: newRefreshToken,
+            message: 'Token aggiornati con successo'
+        });
+    } catch (error) {
+        console.error('Errore durante il refresh del token:', error);
+        res.status(401).json({ message: 'Refresh token non valido o scaduto' });
     }
 });
 

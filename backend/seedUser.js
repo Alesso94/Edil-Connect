@@ -1,6 +1,7 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const User = require('./models/User');
 
 // URI di connessione a MongoDB
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/edilizia_platform';
@@ -17,39 +18,43 @@ mongoose.connect(MONGODB_URI)
     process.exit(1);
   });
 
-// Funzione per creare un utente di test direttamente nel database
+// Funzione per creare un utente di test
 async function createTestUser() {
   try {
     console.log('Creating test user...');
-    // Creiamo manualmente un utente nel database
-    const hashedPassword = await bcrypt.hash('password123', 10);
     
-    // Usa direttamente il database anziché il modello
-    const deleteResult = await mongoose.connection.db.collection('users').deleteOne({ email: 'admin@edilconnect.it' });
-    console.log('Delete result:', deleteResult);
+    // Elimina l'utente esistente se presente
+    await User.deleteOne({ email: 'aless.pan79@gmail.com' });
     
-    // Inserisci un nuovo utente
-    const newUser = {
-      name: 'Admin',
-      email: 'admin@edilconnect.it',
-      password: hashedPassword,
-      profession: 'Architetto',
+    // Crea un nuovo utente usando il modello
+    const newUser = new User({
+      name: 'Alessandro Panetti',
+      email: 'aless.pan79@gmail.com',
+      password: 'password123',
       role: 'admin',
       isAdmin: true,
       isVerified: true,
-      tokens: [],
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+      contactInfo: {
+        phone: '+39 1234567890',
+        address: 'Via Roma 123',
+        city: 'Roma',
+        province: 'RM',
+        postalCode: '00100'
+      },
+      professionalInfo: {
+        profession: 'Sviluppatore',
+        licenseNumber: 'N/A',
+        professionalOrder: 'N/A',
+        orderRegistrationDate: new Date()
+      }
+    });
     
-    const insertResult = await mongoose.connection.db.collection('users').insertOne(newUser);
-    console.log('Insert result:', insertResult);
+    await newUser.save();
     
     // Verifica che l'utente sia stato creato
-    const checkUser = await mongoose.connection.db.collection('users').findOne({ email: 'admin@edilconnect.it' });
-    console.log('User created:', checkUser ? 'Yes' : 'No');
+    const checkUser = await User.findOne({ email: 'aless.pan79@gmail.com' });
     if (checkUser) {
-      console.log('User details:', {
+      console.log('User created successfully:', {
         name: checkUser.name,
         email: checkUser.email,
         isAdmin: checkUser.isAdmin,
@@ -57,7 +62,6 @@ async function createTestUser() {
       });
     }
     
-    console.log('Test user created successfully and verified directly in database');
     process.exit(0);
   } catch (err) {
     console.error('Error creating test user:', err);

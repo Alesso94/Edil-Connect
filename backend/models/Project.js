@@ -1,66 +1,91 @@
 const mongoose = require('mongoose');
 
 const taskSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true
-    },
-    completed: {
-        type: Boolean,
-        default: false
-    }
-});
-
-const projectSchema = new mongoose.Schema({
     title: {
         type: String,
         required: true
     },
     description: {
-        type: String,
-        required: true
+        type: String
     },
-    startDate: {
-        type: Date,
-        required: true
-    },
-    endDate: {
-        type: Date,
-        required: true
-    },
-    budget: {
-        type: Number,
-        required: true
+    dueDate: {
+        type: Date
     },
     status: {
         type: String,
-        required: true,
-        enum: ['In Corso', 'Completato', 'In Attesa', 'Cancellato', 'In Pianificazione']
+        enum: ['Da fare', 'In corso', 'Completata'],
+        default: 'Da fare'
     },
-    category: {
+    priority: {
         type: String,
-        required: true,
-        enum: ['Ristrutturazione', 'Costruzione', 'Impianti', 'Design Interni', 'Manutenzione', 'Altro']
+        enum: ['Bassa', 'Media', 'Alta'],
+        default: 'Media'
     },
-    progress: {
-        type: Number,
-        default: 0,
-        min: 0,
-        max: 100
+    assignedTo: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
     },
-    tasks: [taskSchema],
-    user: {
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
+});
+
+const projectSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: true
+    },
+    description: {
+        type: String
+    },
+    startDate: {
+        type: Date
+    },
+    endDate: {
+        type: Date
+    },
+    location: {
+        type: String
+    },
+    estimatedCost: {
+        type: Number
+    },
+    status: {
+        type: String,
+        enum: ['Non iniziato', 'In corso', 'Completato', 'In pausa'],
+        default: 'In corso'
+    },
+    owner: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
+    },
+    collaborators: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    tasks: [taskSchema],
+    createdAt: {
+        type: Date,
+        default: Date.now
+    },
+    updatedAt: {
+        type: Date,
+        default: Date.now
     }
-}, {
-    timestamps: true
+});
+
+// Middleware pre-save per aggiornare updatedAt
+projectSchema.pre('save', function(next) {
+    this.updatedAt = Date.now();
+    next();
 });
 
 // Indice per migliorare le prestazioni delle query
-projectSchema.index({ user: 1, status: 1 });
-projectSchema.index({ title: 'text', description: 'text' }); // Per la ricerca testuale
+projectSchema.index({ owner: 1, status: 1 });
+projectSchema.index({ collaborators: 1 });
+projectSchema.index({ name: 'text', description: 'text' }); // Per la ricerca testuale
 
 const Project = mongoose.model('Project', projectSchema);
 

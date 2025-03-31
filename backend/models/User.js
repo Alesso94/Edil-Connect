@@ -2,24 +2,74 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+const professionalVerificationSchema = new mongoose.Schema({
+    status: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        default: 'pending'
+    },
+    documents: {
+        identityDocument: {
+            file: String,
+            verified: { type: Boolean, default: false },
+            uploadDate: { type: Date, default: Date.now }
+        },
+        professionalLicense: {
+            file: String,
+            verified: { type: Boolean, default: false },
+            uploadDate: { type: Date, default: Date.now },
+            number: String,
+            expiryDate: Date
+        },
+        criminalRecord: {
+            file: String,
+            verified: { type: Boolean, default: false },
+            uploadDate: { type: Date, default: Date.now },
+            issueDate: Date
+        },
+        businessRegistration: {
+            file: String,
+            verified: { type: Boolean, default: false },
+            uploadDate: { type: Date, default: Date.now },
+            registrationNumber: String
+        },
+        vatDocument: {
+            file: String,
+            verified: { type: Boolean, default: false },
+            uploadDate: { type: Date, default: Date.now }
+        }
+    },
+    verificationNotes: [{
+        note: String,
+        createdAt: { type: Date, default: Date.now },
+        createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+    }],
+    verifiedAt: Date,
+    verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+});
+
 const userSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
     email: {
         type: String,
         required: true,
-        unique: true
+        unique: true,
+        trim: true,
+        lowercase: true
     },
     password: {
         type: String,
-        required: true
+        required: true,
+        minlength: 6
     },
     role: {
         type: String,
-        enum: ['professional', 'admin'],
-        default: 'professional'
+        enum: ['professional', 'business', 'admin'],
+        required: true
     },
     isAdmin: {
         type: Boolean,
@@ -29,27 +79,63 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    verificationToken: {
-        type: String
+    verificationToken: String,
+    verificationTokenExpires: Date,
+    contactInfo: {
+        phone: {
+            type: String,
+            required: true
+        },
+        pec: {
+            type: String,
+            required: true
+        },
+        alternativeEmail: String
     },
-    verificationTokenExpires: {
-        type: Date
+    professionalInfo: {
+        profession: {
+            type: String,
+            required: function() { return this.role === 'professional'; }
+        },
+        licenseNumber: {
+            type: String,
+            required: function() { return this.role === 'professional'; }
+        },
+        professionalOrder: {
+            type: String,
+            required: function() { return this.role === 'professional'; }
+        },
+        orderRegistrationDate: {
+            type: Date,
+            required: function() { return this.role === 'professional'; }
+        }
     },
-    // Campi specifici per professionisti
-    profession: {
-        type: String,
-        required: true
+    businessInfo: {
+        companyName: {
+            type: String,
+            required: function() { return this.role === 'business'; }
+        },
+        vatNumber: {
+            type: String,
+            required: function() { return this.role === 'business'; }
+        },
+        businessType: {
+            type: String,
+            required: function() { return this.role === 'business'; }
+        },
+        registrationNumber: String,
+        legalAddress: {
+            street: String,
+            city: String,
+            postalCode: String,
+            country: {
+                type: String,
+                default: 'Italia'
+            }
+        }
     },
-    license: {
-        type: String,
-        required: function() { return this.role === 'professional'; }
-    },
-    // Campi specifici per utenti pubblici
+    professionalVerification: professionalVerificationSchema,
     fiscalCode: {
-        type: String,
-        required: function() { return this.role === 'public'; }
-    },
-    phone: {
         type: String,
         required: function() { return this.role === 'public'; }
     },
@@ -57,8 +143,16 @@ const userSchema = new mongoose.Schema({
         token: {
             type: String,
             required: true
+        },
+        refreshToken: {
+            type: String,
+            required: false
         }
     }],
+    subscriptionActive: {
+        type: Boolean,
+        default: false
+    },
     createdAt: {
         type: Date,
         default: Date.now
@@ -68,7 +162,7 @@ const userSchema = new mongoose.Schema({
 });
 
 // Hash della password prima del salvataggio
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function(next) {
     const user = this;
     if (user.isModified('password')) {
         user.password = await bcrypt.hash(user.password, 8);
@@ -76,21 +170,28 @@ userSchema.pre('save', async function (next) {
     next();
 });
 
-// Genera token JWT
-userSchema.methods.generateAuthToken = async function () {
+// Genera token JWT e refresh token
+userSchema.methods.generateAuthToken = async function() {
     const user = this;
     const token = jwt.sign(
         { _id: user._id.toString() },
         process.env.JWT_SECRET,
-        { expiresIn: '24h' }
+        { expiresIn: '7d' }  // Token principale valido per 7 giorni
     );
-    user.tokens = user.tokens.concat({ token });
+    
+    const refreshToken = jwt.sign(
+        { _id: user._id.toString() },
+        process.env.JWT_REFRESH_SECRET,
+        { expiresIn: '30d' }  // Refresh token valido per 30 giorni
+    );
+
+    user.tokens = user.tokens.concat({ token, refreshToken });
     await user.save();
-    return token;
+    return { token, refreshToken };
 };
 
 // Rimuovi dati sensibili quando l'oggetto viene convertito in JSON
-userSchema.methods.toJSON = function () {
+userSchema.methods.toJSON = function() {
     const user = this;
     const userObject = user.toObject();
 
@@ -102,30 +203,22 @@ userSchema.methods.toJSON = function () {
     return userObject;
 };
 
-// Trova utente per credenziali
+// Metodo per trovare un utente tramite credenziali
 userSchema.statics.findByCredentials = async (email, password) => {
-    console.log('Tentativo di login per email:', email);
     const user = await User.findOne({ email });
-    
     if (!user) {
-        console.log('Utente non trovato per email:', email);
-        throw new Error('Email non trovata');
+        throw new Error('Utente non trovato');
     }
 
-    console.log('Utente trovato, verifica password...');
     const isMatch = await bcrypt.compare(password, user.password);
-    
     if (!isMatch) {
-        console.log('Password non valida per utente:', email);
-        throw new Error('Password non valida');
+        throw new Error('Password non corretta');
     }
 
-    if (!user.isVerified) {
-        console.log('Utente non verificato:', email);
-        throw new Error('Verifica la tua email prima di accedere');
+    if (!user.isVerified && !user.isAdmin) {
+        throw new Error('Account non verificato. Controlla la tua email per verificare l\'account o richiedi un nuovo link di verifica.');
     }
 
-    console.log('Login riuscito per utente:', email);
     return user;
 };
 

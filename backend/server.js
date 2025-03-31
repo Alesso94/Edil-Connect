@@ -15,25 +15,53 @@ const Project = require('./models/Project');
 const Document = require('./models/Document');
 
 // Import Routes
-const usersRoutes = require('./routes/users');
+const userRoutes = require('./routes/users');
+const documentRoutes = require('./routes/documents');
 const projectsRoutes = require('./routes/projects');
-const documentsRoutes = require('./routes/documents');
 const professionalsRoutes = require('./routes/professionals');
 const settingsRoutes = require('./routes/settings');
+const adminRoutes = require('./routes/admin');
+const subscriptionRoutes = require('./routes/subscriptions');
+const testRouter = require('./routes/test');
 
 const app = express();
 const port = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET;
 const MONGODB_URI = process.env.MONGODB_URI;
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
-// Logging middleware
+console.log('Configurazione CORS con origine:', FRONTEND_URL);
+
+// Configurazione CORS - DEVE essere prima di qualsiasi altra middleware
+app.use(cors({
+    origin: FRONTEND_URL,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    maxAge: 600 // 10 minuti
+}));
+
+// Logging middleware per CORS
 app.use((req, res, next) => {
-  const start = Date.now();
-  res.on('finish', () => {
-    const duration = Date.now() - start;
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.url} - ${res.statusCode} - ${duration}ms`);
-  });
-  next();
+    console.log('Richiesta ricevuta:', {
+        method: req.method,
+        url: req.url,
+        origin: req.headers.origin,
+        headers: req.headers
+    });
+    next();
+});
+
+// Logging middleware per le risposte
+app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+        const duration = Date.now() - start;
+        console.log(`${new Date().toISOString()} - ${req.method} ${req.url} - ${res.statusCode} - ${duration}ms`);
+        console.log('Headers di risposta:', res.getHeaders());
+    });
+    next();
 });
 
 // Gestione errori MongoDB
@@ -81,26 +109,14 @@ connectWithRetry();
 const uploadDir = path.join(__dirname, 'uploads');
 const documentsDir = path.join(uploadDir, 'documents');
 const cadDir = path.join(uploadDir, 'cad');
+const verificationDir = path.join(uploadDir, 'verification');
 
-[uploadDir, documentsDir, cadDir].forEach(dir => {
+[uploadDir, documentsDir, cadDir, verificationDir].forEach(dir => {
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
         console.log(`Directory creata: ${dir}`);
     }
 });
-
-// Configurazione CORS
-const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.FRONTEND_URL, 'https://cerulean-rabanadas-040413.netlify.app', 'https://edilconnect.netlify.app']
-    : ['http://localhost:3000', 'http://127.0.0.1:3000'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  maxAge: 86400 // 24 ore
-};
-
-app.use(cors(corsOptions));
 
 // Middleware per verificare la connessione al database
 app.use((req, res, next) => {
@@ -113,8 +129,8 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(bodyParser.json({ limit: '10mb' }));
-app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 // Configurazione storage per i file
 const storage = multer.diskStorage({
@@ -136,14 +152,17 @@ const upload = multer({
 });
 
 // Routes
-app.use('/api/users', usersRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/documents', documentRoutes);
 app.use('/api/projects', projectsRoutes);
-app.use('/api/documents', documentsRoutes);
 app.use('/api/professionals', professionalsRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/test', testRouter);
 
-// Aggiungi alias per le route di autenticazione
-app.use('/api/auth', usersRoutes);
+// Serve i file statici dalla cartella uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Endpoint base /api
 app.get('/api', (req, res) => {
@@ -172,6 +191,9 @@ app.get('/api/health', (req, res) => {
     uptime: process.uptime()
   });
 });
+
+// Middleware per il webhook di Stripe (deve essere prima del middleware json)
+app.use('/api/subscriptions/webhook', express.raw({type: 'application/json'}));
 
 // Error handling middleware migliorato
 app.use((err, req, res, next) => {
@@ -203,7 +225,7 @@ process.on('unhandledRejection', (reason, promise) => {
 const server = app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on http://0.0.0.0:${port}`);
   console.log('Ambiente:', process.env.NODE_ENV || 'development');
-  console.log('CORS origins:', corsOptions.origin);
+  console.log('CORS origin:', FRONTEND_URL);
   console.log('MongoDB URI:', MONGODB_URI);
   console.log('JWT Secret:', JWT_SECRET ? 'Presente' : 'Non presente');
 });

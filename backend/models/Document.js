@@ -9,35 +9,43 @@ const documentSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    type: {
-        type: String,
-        required: true
-    },
     size: {
         type: Number,
         required: true
     },
-    project: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Project',
+    mimeType: {
+        type: String,
         required: true
     },
-    uploadedBy: {
+    user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
     },
-    isCAD: {
-        type: Boolean,
-        default: false
+    description: {
+        type: String,
+        default: 'Documento caricato'
+    },
+    category: {
+        type: String,
+        default: 'Altro'
+    },
+    uploadDate: {
+        type: Date,
+        default: Date.now
     }
 }, {
     timestamps: true
 });
 
+// Rimuovi il campo path quando converti in JSON
+documentSchema.methods.toJSON = function() {
+    const doc = this.toObject();
+    delete doc.path; // Non esporre il path del file
+    return doc;
+};
+
 // Indice per migliorare le prestazioni delle query
 documentSchema.index({ project: 1, type: 1 });
 
-const Document = mongoose.model('Document', documentSchema);
-
-module.exports = Document; 
+module.exports = mongoose.model('Document', documentSchema); 
