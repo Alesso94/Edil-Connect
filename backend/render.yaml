@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: edilconnect-backend
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false # Questa sarà una variabile segreta
+      - key: JWT_SECRET
+        sync: false
+      - key: ADMIN_CODE
+        sync: false
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: EMAIL_SERVICE
+        value: gmail
+      - key: FRONTEND_URL
+        value: https://edilconnect.netlify.app # Cambia questo con l'URL del tuo frontend quando lo avrai
+    healthCheckPath: /api/health 
