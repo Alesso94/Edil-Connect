@@ -25,10 +25,21 @@
    - `EMAIL_SERVICE`: `gmail`
    - `FRONTEND_URL`: [URL del tuo frontend dopo il deploy, ad esempio https://edilconnect.netlify.app]
    - `PORT`: `10000` (Render assegnerà automaticamente questa porta)
+   - `STRIPE_SECRET_KEY`: [inserisci la tua chiave segreta di Stripe]
+   - `STRIPE_WEBHOOK_SECRET`: [inserisci il secret per i webhook di Stripe]
 
 6. Clicca su "Create Web Service" e attendi che il deploy sia completato.
 
 7. Prendi nota dell'URL generato da Render (es. https://edilconnect-backend.onrender.com).
+
+## Configurazione di Stripe
+
+1. Accedi al tuo dashboard di [Stripe](https://dashboard.stripe.com/).
+2. Vai su Developers > API keys per ottenere la `STRIPE_SECRET_KEY`.
+3. Per configurare il webhook, vai su Developers > Webhooks > Add endpoint.
+4. Imposta l'URL del webhook: `https://edilconnect-backend.onrender.com/api/subscriptions/webhook`.
+5. Seleziona gli eventi da monitorare: `checkout.session.completed` e `invoice.payment_failed`.
+6. Una volta creato il webhook, Stripe ti fornirà il Signing Secret che dovrai utilizzare come `STRIPE_WEBHOOK_SECRET`.
 
 ## Deploy del Frontend su Netlify
 

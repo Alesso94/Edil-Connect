@@ -21,4 +21,8 @@ services:
         value: gmail
       - key: FRONTEND_URL
         value: https://edilconnect.netlify.app # Cambia questo con l'URL del tuo frontend quando lo avrai
+      - key: STRIPE_SECRET_KEY
+        sync: false # Questa sarà una variabile segreta
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false # Questa sarà una variabile segreta
     healthCheckPath: /api/health 
