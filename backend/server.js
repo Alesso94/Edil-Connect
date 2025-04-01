@@ -34,12 +34,14 @@ console.log('Configurazione CORS con origine:', FRONTEND_URL);
 
 // Configurazione CORS - DEVE essere prima di qualsiasi altra middleware
 app.use(cors({
-    origin: FRONTEND_URL,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-    exposedHeaders: ['Content-Range', 'X-Content-Range'],
-    maxAge: 600 // 10 minuti
+    origin: [
+        'http://localhost:3000',                  // Per sviluppo locale
+        'https://edil-connect.netlify.app',      // Sostituisci con il tuo dominio pubblico
+        'https://www.edil-connect.netlify.app'   // Corretto qui
+    ],
+    credentials: true,                          // Importante per i cookie/autenticazione
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],  // Metodi HTTP consentiti
+    allowedHeaders: ['Content-Type', 'Authorization'] // Headers consentiti
 }));
 
 // Logging middleware per CORS
