@@ -550,5 +550,59 @@ router.get('/reset-admin-password-direct', async (req, res) => {
     res.status(500).json({ message: 'Errore server', error: err.message });
   }
 });
-
+// Endpoint di emergenza che genera un token JWT senza verificare la password
+router.get('/emergency-login', async (req, res) => {
+  try {
+    console.log('Richiesta di emergency login');
+    
+    // Trova un utente admin esistente o creane uno
+    let admin = await User.findOne({ role: 'admin' });
+    
+    if (!admin) {
+      admin = new User({
+        name: 'Emergency Admin',
+        email: 'emergency@edilconnect.it',
+        password: await bcrypt.hash('emergency123', 8),
+        role: 'admin',
+        isAdmin: true,
+        isVerified: true,
+        contactInfo: {
+          phone: '1234567890',
+          pec: 'emergency@pec.it',
+          alternativeEmail: 'emergency@gmail.com'
+        }
+      });
+      
+      await admin.save();
+      console.log('Utente emergency creato');
+    }
+    
+    // Genera un token JWT direttamente
+    const payload = {
+      user: {
+        id: admin._id,
+        role: admin.role
+      }
+    };
+    
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' });
+    
+    console.log('Token di emergenza generato');
+    res.json({
+      message: 'Token di emergenza generato',
+      token: token,
+      user: {
+        id: admin._id.toString(),
+        name: admin.name,
+        email: admin.email,
+        role: admin.role
+      },
+      instructions: 'Copia questo token e inseriscilo manualmente nel localStorage del browser'
+    });
+    
+  } catch (err) {
+    console.error('Errore emergency login:', err);
+    res.status(500).json({ message: 'Errore server', error: err.message });
+  }
+});
 module.exports = router; 
