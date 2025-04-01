@@ -511,4 +511,43 @@ router.post('/debug-auth', async (req, res) => {
     });
   }
 });
+// Endpoint temporaneo per reset password - RIMUOVERE DOPO L'USO
+router.get('/reset-admin-password-direct', async (req, res) => {
+  try {
+    console.log('Tentativo di reset password admin con salvataggio diretto');
+    
+    // Trova l'utente admin
+    const admin = await User.findOne({ email: 'admin@edilconnect.it' });
+    if (!admin) {
+      return res.status(404).json({ message: 'Utente admin non trovato' });
+    }
+    
+    // Nuova password super semplice
+    const newPassword = 'admin123';
+    
+    // Usa bcrypt direttamente con 8 salt rounds (più comune)
+    const salt = await bcrypt.genSalt(8);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    
+    // Aggiorna la password direttamente nel database
+    await User.updateOne(
+      { _id: admin._id },
+      { $set: { password: hashedPassword } }
+    );
+    
+    console.log('Password admin resettata con successo con metodo diretto');
+    console.log('Nuovo hash password:', hashedPassword);
+    
+    res.json({
+      message: 'Password admin resettata con successo',
+      email: admin.email,
+      newPassword: newPassword,
+      passwordHash: hashedPassword
+    });
+    
+  } catch (err) {
+    console.error('Errore reset password direct:', err);
+    res.status(500).json({ message: 'Errore server', error: err.message });
+  }
+});
 module.exports = router; 
