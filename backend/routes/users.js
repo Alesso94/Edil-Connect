@@ -359,4 +359,56 @@ router.post('/debug-login', async (req, res) => {
     res.status(500).json({ message: 'Errore del server', error: err.message });
   }
 });
+// Endpoint temporaneo per creare un utente admin - RIMUOVERE DOPO L'USO
+router.get('/create-admin', async (req, res) => {
+  try {
+    console.log('Tentativo di creazione utente admin');
+    
+    // Controlla se l'utente esiste già
+    const existingUser = await User.findOne({ email: 'admin@edilconnect.it' });
+    if (existingUser) {
+      console.log('Admin già esistente:', existingUser.email);
+      return res.json({ 
+        message: 'Admin già esistente', 
+        email: existingUser.email,
+        // Evita di mostrare dati sensibili
+        id: existingUser._id,
+        name: existingUser.name,
+        role: existingUser.role
+      });
+    }
+    
+    // Crea un nuovo utente admin
+    const password = 'admin123'; // Cambia con una password sicura
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    const newUser = new User({
+      name: 'Admin',
+      email: 'admin@edilconnect.it',
+      password: hashedPassword,
+      role: 'admin',
+      isAdmin: true,
+      isVerified: true,
+      contactInfo: {
+        phone: '1234567890',
+        pec: 'admin@pec.test.it', // PEC di test
+        alternativeEmail: 'admin.alt@edilconnect.it'
+      }
+    });
+    
+    await newUser.save();
+    
+    console.log('Utente admin creato con successo');
+    res.json({
+      message: 'Utente admin creato con successo',
+      email: 'admin@edilconnect.it',
+      password: password, // Solo per uso interno/test
+      role: 'admin'
+    });
+    
+  } catch (err) {
+    console.error('Errore creazione admin:', err);
+    res.status(500).json({ message: 'Errore server', error: err.message });
+  }
+});
 module.exports = router; 
