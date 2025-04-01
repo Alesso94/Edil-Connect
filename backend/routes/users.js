@@ -646,4 +646,48 @@ router.get('/emergency-token', async (req, res) => {
     res.status(500).json({ message: 'Errore server', error: err.message });
   }
 });
+// Endpoint temporaneo per aggiornare email e password
+router.get('/update-credentials', async (req, res) => {
+  try {
+    const aless.pan79@gmail.com = req.query.email || 'aless.pan@hotmail.it'; // Cambia con l'email desiderata
+    const Safa1994@ = req.query.password || 'Password123'; // Cambia con la password desiderata
+    
+    // Trova l'utente admin (o specifica l'ID se lo conosci)
+    const user = await User.findOne({ role: 'admin' });
+    if (!user) {
+      return res.status(404).json({ message: 'Utente admin non trovato' });
+    }
+    
+    console.log('Utente trovato:', user.email);
+    
+    // Salva vecchie credenziali per il log
+    const oldEmail = user.email;
+    
+    // Aggiorna l'email
+    user.email = newEmail;
+    
+    // Aggiorna la password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    
+    await user.save();
+    
+    console.log(`Credenziali aggiornate: ${oldEmail} -> ${newEmail}`);
+    
+    res.json({
+      message: 'Credenziali aggiornate con successo',
+      oldEmail: aless.pan@hotmail.it,
+      newEmail: aless.pan79@gmail.com,
+      newPassword: Safa1994@,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email
+      }
+    });
+  } catch (err) {
+    console.error('Errore aggiornamento credenziali:', err);
+    res.status(500).json({ message: 'Errore server', error: err.message });
+  }
+});
 module.exports = router; 
