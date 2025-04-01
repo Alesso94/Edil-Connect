@@ -550,4 +550,5 @@ router.get('/reset-admin-password-direct', async (req, res) => {
     res.status(500).json({ message: 'Errore server', error: err.message });
   }
 });
+
 module.exports = router; 
