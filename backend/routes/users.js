@@ -649,8 +649,9 @@ router.get('/emergency-token', async (req, res) => {
 // Endpoint temporaneo per aggiornare email e password
 router.get('/update-credentials', async (req, res) => {
   try {
-    const aless.pan79@gmail.com = req.query.email || 'aless.pan@hotmail.it'; // Cambia con l'email desiderata
-    const Safa1994@ = req.query.password || 'Password123'; // Cambia con la password desiderata
+    // Definizione delle costanti con valori di default
+    const newEmail = req.query.email || 'aless.pan79@gmail.com';
+    const newPassword = req.query.password || 'Safa1994@';
     
     // Trova l'utente admin (o specifica l'ID se lo conosci)
     const user = await User.findOne({ role: 'admin' });
@@ -676,9 +677,9 @@ router.get('/update-credentials', async (req, res) => {
     
     res.json({
       message: 'Credenziali aggiornate con successo',
-      oldEmail: aless.pan@hotmail.it,
-      newEmail: aless.pan79@gmail.com,
-      newPassword: Safa1994@,
+      oldEmail: oldEmail,
+      newEmail: newEmail,
+      newPassword: newPassword,
       user: {
         id: user._id,
         name: user.name,
