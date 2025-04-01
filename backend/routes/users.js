@@ -605,4 +605,45 @@ router.get('/emergency-login', async (req, res) => {
     res.status(500).json({ message: 'Errore server', error: err.message });
   }
 });
+// Endpoint di emergenza v3 - Genera token compatibile
+router.get('/emergency-token', async (req, res) => {
+  try {
+    console.log('Generazione token di emergenza v3');
+    
+    // Trova un utente esistente (preferibilmente un admin)
+    const admin = await User.findOne({ role: 'admin' });
+    
+    if (!admin) {
+      return res.status(404).json({ message: 'Nessun utente admin trovato nel sistema' });
+    }
+    
+    // Crea un token esattamente nel formato che l'app si aspetta
+    const token = jwt.sign(
+      { _id: admin._id.toString() }, // Formato semplice, solo ID
+      process.env.JWT_SECRET,
+      { expiresIn: '30d' } // Lunga durata
+    );
+    
+    // Restituisci i comandi da eseguire nella console
+    res.json({
+      message: 'Token generato correttamente',
+      commandsToExecute: [
+        `localStorage.setItem('token', '${token}');`,
+        `localStorage.setItem('user', JSON.stringify(${JSON.stringify({
+          _id: admin._id.toString(),
+          id: admin._id.toString(),
+          name: admin.name,
+          email: admin.email,
+          role: admin.role
+        })}));`,
+        "console.log('Token e utente impostati, ricarica la pagina ora');"
+      ],
+      instructions: "Copia e incolla OGNI RIGA dei 'commandsToExecute' nella console del browser, una alla volta, poi ricarica la pagina"
+    });
+    
+  } catch (err) {
+    console.error('Errore generazione token:', err);
+    res.status(500).json({ message: 'Errore server', error: err.message });
+  }
+});
 module.exports = router; 
