@@ -17,7 +17,8 @@ import Subscription from './pages/Subscription';
 import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
 import FloatingAvatar from './components/FloatingAvatar';
- <Route path="/test-login" element={<TestLogin />} />
+import TestLogin from './pages/TestLogin';
+<Route path="/test-login" element={<TestLogin />} />
 function App() {
     return (
         <ThemeProvider theme={theme}>
