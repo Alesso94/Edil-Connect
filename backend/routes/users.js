@@ -550,34 +550,7 @@ router.get('/reset-admin-password-direct', async (req, res) => {
     res.status(500).json({ message: 'Errore server', error: err.message });
   }
 });
-// Endpoint di emergenza che genera un token JWT senza verificare la password
-router.get('/emergency-login', async (req, res) => {
-  try {
-    console.log('Richiesta di emergency login');
-    
-    // Trova un utente admin esistente o creane uno
-    let admin = await User.findOne({ role: 'admin' });
-    
-    if (!admin) {
-      admin = new User({
-        name: 'Emergency Admin',
-        email: 'emergency@edilconnect.it',
-        password: await bcrypt.hash('emergency123', 8),
-        role: 'admin',
-        isAdmin: true,
-        isVerified: true,
-        contactInfo: {
-          phone: '1234567890',
-          pec: 'emergency@pec.it',
-          alternativeEmail: 'emergency@gmail.com'
-        }
-      });
-      
-      await admin.save();
-      console.log('Utente emergency creato');
-    }
-    
-    // Genera un token JWT direttamente
+ // Genera un token JWT direttamente
     const payload = {
       user: {
         id: admin._id,
@@ -605,31 +578,7 @@ router.get('/emergency-login', async (req, res) => {
     res.status(500).json({ message: 'Errore server', error: err.message });
   }
 });
-// Endpoint di emergenza v4 per bypass completo dell'autenticazione
-router.get('/emergency-access', async (req, res) => {
-  try {
-    // Trova o crea un utente admin
-    let admin = await User.findOne({ role: 'admin' });
-    
-    if (!admin) {
-      // Crea un admin se non esiste
-      const hashedPassword = await bcrypt.hash('admin123', 8);
-      admin = new User({
-        name: 'Emergency Admin',
-        email: 'emergency@edilconnect.it',
-        password: hashedPassword,
-        role: 'admin',
-        isAdmin: true,
-        isVerified: true,
-        contactInfo: {
-          phone: '1234567890',
-          pec: 'admin@pec.test.it',
-          alternativeEmail: 'admin.alt@edilconnect.it'
-        }
-      });
-      await admin.save();
-    }
-    
+
     // Genera token con JWT diretto (non dipende da variabili d'ambiente)
     const payload = { _id: admin._id.toString() };
     // Usa un secret hardcoded SOLO per questa emergenza
@@ -706,6 +655,7 @@ router.get('/update-credentials', async (req, res) => {
     res.status(500).json({ message: 'Errore server', error: err.message });
   }
 });
+
 // Endpoint per diagnosticare le variabili d'ambiente (non mostra valori sensibili)
 router.get('/check-env', (req, res) => {
   // Controlla se le variabili esistono (senza mostrare i valori)
@@ -725,23 +675,28 @@ router.get('/check-env', (req, res) => {
     date: new Date().toISOString()
   });
 });
-// Endpoint per diagnosticare le variabili d'ambiente (non mostra valori sensibili)
-router.get('/check-env', (req, res) => {
-  // Controlla se le variabili esistono (senza mostrare i valori)
-  const envStatus = {
-    JWT_SECRET: !!process.env.JWT_SECRET,
-    STRIPE_SECRET_KEY: !!process.env.STRIPE_SECRET_KEY,
-    STRIPE_WEBHOOK_SECRET: !!process.env.STRIPE_WEBHOOK_SECRET,
-    MONGODB_URI: !!process.env.MONGODB_URI,
-    NODE_ENV: process.env.NODE_ENV,
-    FRONTEND_URL: process.env.FRONTEND_URL
-  };
-  
-  res.json({
-    message: 'Stato delle variabili d\'ambiente',
-    variables: envStatus,
-    nodeVersion: process.version,
-    date: new Date().toISOString()
-  });
-});
+// Endpoint di emergenza v4 per bypass completo dell'autenticazione
+router.get('/emergency-access', async (req, res) => {
+  try {
+    // Trova o crea un utente admin
+    let admin = await User.findOne({ role: 'admin' });
+    
+    if (!admin) {
+      // Crea un admin se non esiste
+      const hashedPassword = await bcrypt.hash('admin123', 8);
+      admin = new User({
+        name: 'Emergency Admin',
+        email: 'emergency@edilconnect.it',
+        password: hashedPassword,
+        role: 'admin',
+        isAdmin: true,
+        isVerified: true,
+        contactInfo: {
+          phone: '1234567890',
+          pec: 'admin@pec.test.it',
+          alternativeEmail: 'admin.alt@edilconnect.it'
+        }
+      });
+      await admin.save();
+    }
 module.exports = router; 
