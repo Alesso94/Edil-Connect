@@ -442,4 +442,73 @@ router.get('/reset-admin-password', async (req, res) => {
     res.status(500).json({ message: 'Errore server', error: err.message });
   }
 });
+// Endpoint di debug per verificare il processo di autenticazione - RIMUOVERE DOPO L'USO
+router.post('/debug-auth', async (req, res) => {
+  try {
+    console.log('Debug autenticazione - dati ricevuti:', req.body);
+    const { email, password } = req.body;
+    
+    // Cerca l'utente
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.json({ 
+        status: 'error',
+        message: 'Utente non trovato',
+        email: email
+      });
+    }
+    
+    console.log('Debug autenticazione - utente trovato:', {
+      id: user._id,
+      email: user.email,
+      passwordHash: user.password.substring(0, 10) + '...' // Mostra solo i primi 10 caratteri per sicurezza
+    });
+    
+    // Verifica la password manualmente
+    const isMatch = await bcrypt.compare(password, user.password);
+    
+    console.log('Debug autenticazione - risultato verifica password:', isMatch);
+    
+    if (!isMatch) {
+      return res.json({ 
+        status: 'error',
+        message: 'Password non corretta',
+        passwordAttempt: password,
+        passwordHashStart: user.password.substring(0, 10) + '...'
+      });
+    }
+    
+    // Verifica altri vincoli
+    if (!user.isVerified && !user.isAdmin) {
+      return res.json({ 
+        status: 'error',
+        message: 'Account non verificato',
+        isVerified: user.isVerified,
+        isAdmin: user.isAdmin
+      });
+    }
+    
+    // Se arriviamo qui, l'autenticazione ha avuto successo
+    res.json({
+      status: 'success',
+      message: 'Autenticazione riuscita',
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        isAdmin: user.isAdmin,
+        isVerified: user.isVerified
+      }
+    });
+    
+  } catch (err) {
+    console.error('Errore debug autenticazione:', err);
+    res.status(500).json({ 
+      status: 'error',
+      message: 'Errore server',
+      error: err.message
+    });
+  }
+});
 module.exports = router; 
