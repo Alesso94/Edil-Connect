@@ -19,7 +19,7 @@ const TestLogin = () => {
 
     try {
       console.log('Tentativo di debug login con:', { email });
-      const backendUrl = process.env.REACT_APP_API_URL || 'https://edil-connect.onrender.com';
+      const backendUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       console.log('URL del backend:', backendUrl);
 
       const response = await axios.post(`${backendUrl}/api/users/debug-login`, {
@@ -39,6 +39,62 @@ const TestLogin = () => {
 
     } catch (error) {
       console.error('Errore nel debug login:', error);
+      setError(`Errore: ${error.response?.data?.message || error.message}`);
+      setApiResponse(error.response?.data);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePasswordDiagnostic = async () => {
+    if (!email || !password) {
+      setError("Inserisci email e password per la diagnostica");
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    setApiResponse(null);
+    
+    try {
+      const backendUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await axios.post(`${backendUrl}/api/users/debug-password`, {
+        email,
+        password
+      });
+      
+      console.log('Risposta diagnostica:', response.data);
+      setSuccess('Diagnostica password completata');
+      setApiResponse(response.data);
+    } catch (error) {
+      console.error('Errore diagnostica:', error);
+      setError(`Errore: ${error.response?.data?.message || error.message}`);
+      setApiResponse(error.response?.data);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleResetAdmin = async () => {
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    setApiResponse(null);
+    
+    try {
+      const backendUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await axios.get(`${backendUrl}/api/users/create-admin`);
+      
+      console.log('Risposta reset admin:', response.data);
+      setSuccess('Admin resettato con successo');
+      setApiResponse(response.data);
+      
+      // Precompila i campi con le credenziali admin
+      setEmail('admin@edilconnect.it');
+      setPassword('admin123');
+    } catch (error) {
+      console.error('Errore reset admin:', error);
       setError(`Errore: ${error.response?.data?.message || error.message}`);
       setApiResponse(error.response?.data);
     } finally {
@@ -99,6 +155,28 @@ const TestLogin = () => {
             {loading ? <CircularProgress size={24} /> : 'Test Login'}
           </Button>
         </form>
+        
+        <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
+          <Button 
+            variant="outlined" 
+            color="secondary" 
+            onClick={handlePasswordDiagnostic}
+            disabled={loading || !email || !password}
+            fullWidth
+          >
+            Diagnostica Password
+          </Button>
+          
+          <Button 
+            variant="outlined" 
+            color="warning" 
+            onClick={handleResetAdmin}
+            disabled={loading}
+            fullWidth
+          >
+            Reset Admin
+          </Button>
+        </Box>
 
         {apiResponse && (
           <Box sx={{ mt: 4 }}>
@@ -115,4 +193,4 @@ const TestLogin = () => {
   );
 };
 
-export default TestLogin; 
+export default TestLogin;

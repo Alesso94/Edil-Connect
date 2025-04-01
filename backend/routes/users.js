@@ -4,7 +4,7 @@ const User = require('../models/User');
 const auth = require('../middleware/auth');
 const { generateVerificationToken, sendVerificationEmail } = require('../utils/emailService');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 // POST /api/users/register - Registrazione
 router.post('/register', async (req, res) => {
@@ -415,4 +415,93 @@ router.get('/create-admin', async (req, res) => {
   }
 });
 
-module.exports = router; 
+// Endpoint diagnostico per problemi di password - SOLO PER EMERGENZE
+router.post('/debug-password', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    console.log('Richiesta diagnostica password per:', email);
+    
+    // Trova l'utente senza validazione
+    const user = await User.findOne({ email });
+    if (!user) {
+      console.log('Diagnostica: Utente non trovato');
+      return res.status(400).json({ message: 'Utente non trovato' });
+    }
+
+    // Verifica con bcryptjs
+    const bcryptjsMatch = await require('bcryptjs').compare(password, user.password);
+    
+    // Crea un nuovo hash con bcryptjs per confronto
+    const newHash = await bcrypt.hash(password, 10);
+    
+    console.log('Diagnostica completata per:', email);
+    
+    // Info diagnostiche
+    res.json({
+      passwordInfo: {
+        originalHashStart: user.password.substring(0, 10) + '...',
+        passwordProvided: password ? true : false,
+        bcryptjsMatch: bcryptjsMatch,
+        hashAlgorithmLooksLike: user.password.startsWith('$2a$') ? 'bcrypt/bcryptjs' : 'altro algoritmo',
+        hashLength: user.password.length,
+        newHashStart: newHash.substring(0, 10) + '...',
+        newHashAlgorithm: newHash.startsWith('$2a$') ? 'bcrypt/bcryptjs' : 'altro algoritmo'
+      },
+      userInfo: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        isAdmin: user.isAdmin,
+        isVerified: user.isVerified
+      }
+    });
+  } catch (err) {
+    console.error('Errore diagnostica password:', err);
+    res.status(500).json({ 
+      message: 'Errore diagnostica password', 
+      error: err.message,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
+  }
+});
+
+// Endpoint per reset password di emergenza - SOLO PER EMERGENZE
+router.post('/emergency-reset', async (req, res) => {
+  try {
+    const { email, newPassword, secretKey } = req.body;
+    
+    // Verifica chiave segreta (misura di sicurezza)
+    if (secretKey !== process.env.ADMIN_CODE) {
+      return res.status(403).json({ message: 'Chiave segreta non valida' });
+    }
+    
+    console.log('Tentativo di reset password di emergenza per:', email);
+    
+    // Trova l'utente
+    const user = await User.findOne({ email });
+    if (!user) {
+      console.log('Reset emergenza: Utente non trovato');
+      return res.status(400).json({ message: 'Utente non trovato' });
+    }
+    
+    // Hash con bcryptjs e salvare
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+    
+    console.log('Password reimpostata con successo per:', email);
+    res.json({ 
+      message: 'Password reimpostata con successo',
+      email: user.email
+    });
+  } catch (err) {
+    console.error('Errore reset password emergenza:', err);
+    res.status(500).json({ 
+      message: 'Errore reset password', 
+      error: err.message 
+    });
+  }
+});
+
+module.exports = router;

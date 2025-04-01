@@ -1,0 +1,3 @@
+   [submodule "temp_clone"]
+       path = temp_clone
+       url = https://github.com/Alesso94/Edil-Connect.git

@@ -1,11 +1,6 @@
 import React, { useState } from 'react';
 import { Button, CircularProgress } from '@mui/material';
 import axios from 'axios';
-import { loadStripe } from '@stripe/stripe-js';
-
-// Inizializza Stripe con la tua chiave pubblica
-// Importante: questa chiave deve essere quella pubblica, non quella segreta!
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY);
 
 const StripeCheckoutButton = ({ planId, buttonText, variant = 'contained', size = 'large', fullWidth = false }) => {
   const [loading, setLoading] = useState(false);
@@ -25,8 +20,8 @@ const StripeCheckoutButton = ({ planId, buttonText, variant = 'contained', size 
       if (url) {
         window.location.href = url;
       } else {
-        // Metodo alternativo usando loadStripe
-        const stripe = await stripePromise;
+        // Usa Stripe globale invece di loadStripe
+        const stripe = window.Stripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY);
         await stripe.redirectToCheckout({ sessionId });
       }
     } catch (error) {
