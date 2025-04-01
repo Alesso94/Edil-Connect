@@ -411,4 +411,35 @@ router.get('/create-admin', async (req, res) => {
     res.status(500).json({ message: 'Errore server', error: err.message });
   }
 });
+// Endpoint temporaneo per reset password - RIMUOVERE DOPO L'USO
+router.get('/reset-admin-password', async (req, res) => {
+  try {
+    console.log('Tentativo di reset password admin');
+    
+    // Trova l'utente admin
+    const admin = await User.findOne({ email: 'admin@edilconnect.it' });
+    if (!admin) {
+      return res.status(404).json({ message: 'Utente admin non trovato' });
+    }
+    
+    // Nuova password semplice e facile da ricordare
+    const newPassword = 'Password123';
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    // Aggiorna la password
+    admin.password = hashedPassword;
+    await admin.save();
+    
+    console.log('Password admin resettata con successo');
+    res.json({
+      message: 'Password admin resettata con successo',
+      email: admin.email,
+      newPassword: newPassword // Solo per uso interno/test
+    });
+    
+  } catch (err) {
+    console.error('Errore reset password:', err);
+    res.status(500).json({ message: 'Errore server', error: err.message });
+  }
+});
 module.exports = router; 
