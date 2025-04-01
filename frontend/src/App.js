@@ -17,7 +17,7 @@ import Subscription from './pages/Subscription';
 import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
 import FloatingAvatar from './components/FloatingAvatar';
-
+ <Route path="/test-login" element={<TestLogin />} />
 function App() {
     return (
         <ThemeProvider theme={theme}>
@@ -44,7 +44,7 @@ function AppContent() {
                 <Route path="/register" element={<Register />} />
                 <Route path="/verify-email" element={<VerifyEmail />} />
                 <Route path="/subscription" element={<Subscription />} />
-                
+                <Route path="/test-login" element={<TestLogin />} />
                 {/* Protected Routes */}
                 <Route path="/dashboard" element={
                     <PrivateRoute>
