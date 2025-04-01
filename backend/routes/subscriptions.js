@@ -187,6 +187,51 @@ router.get('/status', auth, async (req, res) => {
     }
 });
 
+// GET /api/subscriptions/verify-session/:sessionId - Verifica stato sessione di checkout
+router.get('/verify-session/:sessionId', auth, async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+
+        // Recupera la sessione da Stripe
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+        
+        if (!session) {
+            return res.status(404).json({ message: 'Sessione non trovata' });
+        }
+
+        // Verifica che la sessione appartenga all'utente corrente
+        if (session.metadata && session.metadata.userId !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'Accesso non autorizzato' });
+        }
+
+        // Trova l'abbonamento associato a questa sessione
+        const subscription = await Subscription.findOne({ 
+            user: req.user._id,
+            stripeSubscriptionId: session.subscription
+        });
+
+        if (!subscription) {
+            return res.status(404).json({ message: 'Abbonamento non trovato' });
+        }
+
+        // Ottieni il nome del piano
+        const planId = subscription.plan;
+        const planName = planId === 'monthly' ? 'Piano Mensile' : 'Piano Annuale';
+
+        res.json({
+            status: subscription.status,
+            planId: subscription.plan,
+            planName,
+            startDate: subscription.startDate,
+            endDate: subscription.endDate,
+            autoRenew: subscription.autoRenew
+        });
+    } catch (error) {
+        console.error('Errore verifica sessione:', error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
 // POST /api/subscriptions/cancel - Cancella abbonamento
 router.post('/cancel', auth, async (req, res) => {
     try {

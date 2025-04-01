@@ -88,7 +88,7 @@ const userSchema = new mongoose.Schema({
         },
         pec: {
             type: String,
-            required: true
+            required: false
         },
         alternativeEmail: String
     },

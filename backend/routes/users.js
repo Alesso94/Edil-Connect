@@ -4,6 +4,7 @@ const User = require('../models/User');
 const auth = require('../middleware/auth');
 const { generateVerificationToken, sendVerificationEmail } = require('../utils/emailService');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 
 // POST /api/users/register - Registrazione
 router.post('/register', async (req, res) => {
@@ -294,6 +295,124 @@ router.post('/refresh-token', async (req, res) => {
         console.error('Errore durante il refresh del token:', error);
         res.status(401).json({ message: 'Refresh token non valido o scaduto' });
     }
+});
+
+// Endpoint temporaneo di emergenza per debug - RIMUOVERE DOPO L'USO
+// Questo endpoint dovrebbe essere accessibile solo in ambiente di sviluppo
+router.post('/debug-login', async (req, res) => {
+  try {
+    console.log('Tentativo di debug-login');
+    const { email, password } = req.body;
+    
+    // Trova l'utente senza validazione completa
+    const user = await User.findOne({ email });
+    if (!user) {
+      console.log('Debug-login: Utente non trovato');
+      return res.status(400).json({ message: 'Utente non trovato' });
+    }
+
+    // Log dei dettagli dell'utente per debug
+    console.log('Utente trovato nel debug-login:', {
+      id: user._id,
+      email: user.email,
+      name: user.name,
+      contactInfo: user.contactInfo || 'Nessuna informazione di contatto'
+    });
+
+    // Verifica password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      console.log('Debug-login: Password non corretta');
+      return res.status(400).json({ message: 'Password non corretta' });
+    }
+
+    // Genera token JWT manualmente (senza salvare nel database)
+    const payload = {
+      user: {
+        id: user._id,
+        role: user.role
+      }
+    };
+
+    jwt.sign(
+      payload, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '1h' },
+      (err, token) => {
+        if (err) throw err;
+        console.log('Debug-login: Token generato con successo');
+        
+        // Risposta con token e dati utente
+        res.json({
+          message: 'Login di debug riuscito',
+          token,
+          user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+          }
+        });
+      }
+    );
+    
+  } catch (err) {
+    console.error('Errore in debug-login:', err);
+    res.status(500).json({ message: 'Errore del server', error: err.message });
+  }
+});
+
+// Endpoint temporaneo per creare un utente admin - RIMUOVERE DOPO L'USO
+router.get('/create-admin', async (req, res) => {
+  try {
+    console.log('Tentativo di creazione utente admin');
+    
+    // Controlla se l'utente esiste già
+    const existingUser = await User.findOne({ email: 'admin@edilconnect.it' });
+    if (existingUser) {
+      console.log('Admin già esistente:', existingUser.email);
+      return res.json({ 
+        message: 'Admin già esistente', 
+        email: existingUser.email,
+        // Evita di mostrare dati sensibili
+        id: existingUser._id,
+        name: existingUser.name,
+        role: existingUser.role
+      });
+    }
+    
+    // Crea un nuovo utente admin
+    const password = 'admin123'; // Cambia con una password sicura
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    const newUser = new User({
+      name: 'Admin',
+      email: 'admin@edilconnect.it',
+      password: hashedPassword,
+      role: 'admin',
+      isAdmin: true,
+      isVerified: true,
+      contactInfo: {
+        phone: '1234567890',
+        pec: 'admin@pec.test.it', // PEC di test
+        alternativeEmail: 'admin.alt@edilconnect.it'
+      }
+    });
+    
+    await newUser.save();
+    
+    console.log('Utente admin creato con successo');
+    res.json({
+      message: 'Utente admin creato con successo',
+      email: 'admin@edilconnect.it',
+      password: password, // Solo per uso interno/test
+      role: 'admin'
+    });
+    
+  } catch (err) {
+    console.error('Errore creazione admin:', err);
+    res.status(500).json({ message: 'Errore server', error: err.message });
+  }
 });
 
 module.exports = router; 

@@ -14,23 +14,37 @@ import {
     AppBar,
     Toolbar,
     IconButton,
-    Chip
+    Chip,
+    Divider,
+    List,
+    ListItem,
+    ListItemIcon,
+    ListItemText,
+    useTheme,
+    useMediaQuery,
+    Skeleton
 } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { blue, green, grey } from '@mui/material/colors';
+import CheckIcon from '@mui/icons-material/Check';
+import axios from 'axios';
+import StripeCheckoutButton from '../components/StripeCheckoutButton';
 
 const Subscription = () => {
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
     const [selectedPlan, setSelectedPlan] = useState(null);
     const { token, user } = useAuth();
     const navigate = useNavigate();
     const isAuthenticated = !!token;
+    const [plans, setPlans] = useState(null);
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     // Piani di abbonamento
-    const plans = [
+    const plansData = [
         {
             id: 'price_basic',
             name: 'Piano Base',
@@ -85,6 +99,21 @@ const Subscription = () => {
         }
     ];
 
+    useEffect(() => {
+        const fetchPlans = async () => {
+            try {
+                const response = await axios.get('/api/subscriptions/plans');
+                setPlans(response.data);
+            } catch (error) {
+                console.error('Errore nel recupero dei piani:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchPlans();
+    }, []);
+
     // Funzione per gestire l'abbonamento
     const handleSubscribe = (plan) => {
         // Piano base gratuito
@@ -131,6 +160,21 @@ const Subscription = () => {
         navigate('/');
     };
 
+    // Funzioni di utilità per formattare i prezzi
+    const formatPrice = (amount) => {
+        return (amount / 100).toFixed(2).replace('.', ',') + ' €';
+    };
+
+    // Caratteristiche incluse nei piani
+    const features = [
+        'Accesso a tutti i progetti',
+        'Gestione documenti digitali',
+        'Archiviazione sicura',
+        'Dashboard personalizzata',
+        'Assistenza prioritaria',
+        'Collaborazione team'
+    ];
+
     if (loading) {
         return (
             <Container maxWidth="lg" sx={{ pt: 2 }}>
@@ -143,201 +187,189 @@ const Subscription = () => {
     }
 
     return (
-        <Container maxWidth="lg" sx={{ py: 4 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-                <Button 
-                    startIcon={<ArrowBackIcon />}
-                    onClick={goToHome}
-                    variant="outlined"
-                >
-                    Torna alla Home
-                </Button>
-                
-                {isAuthenticated && (
-                    <Button
-                        variant="contained"
-                        onClick={goToDashboard}
-                    >
-                        Dashboard
-                    </Button>
-                )}
+        <Container maxWidth="lg" sx={{ py: 8 }}>
+            <Box textAlign="center" mb={6}>
+                <Typography variant="h3" component="h1" gutterBottom fontWeight="bold">
+                    Piani di Abbonamento
+                </Typography>
+                <Typography variant="h6" color="text.secondary" maxWidth="800px" mx="auto">
+                    Scegli il piano più adatto alle tue esigenze e accedi a tutti i servizi premium di EdilConnect
+                </Typography>
             </Box>
 
-            <Typography variant="h4" component="h1" gutterBottom align="center">
-                Scegli il Tuo Piano
-            </Typography>
-
-            {error && (
-                <Alert severity="error" sx={{ mb: 3 }}>
-                    {error}
-                </Alert>
-            )}
-
-            {successMessage && (
-                <Alert severity="success" sx={{ mb: 3 }}>
-                    {successMessage}
-                    <Box sx={{ mt: 2 }}>
-                        {isAuthenticated && (
-                            <Button 
-                                variant="contained" 
-                                color="primary" 
-                                onClick={goToDashboard}
-                                sx={{ mr: 2 }}
-                            >
-                                Vai alla Dashboard
-                            </Button>
-                        )}
-                        <Button 
-                            variant="outlined" 
-                            onClick={goToHome}
+            {loading ? (
+                <Grid container spacing={4} justifyContent="center">
+                    {[1, 2].map((item) => (
+                        <Grid item xs={12} md={6} key={item}>
+                            <Skeleton variant="rectangular" height={400} />
+                        </Grid>
+                    ))}
+                </Grid>
+            ) : (
+                <Grid container spacing={4} justifyContent="center">
+                    {/* Piano Mensile */}
+                    <Grid item xs={12} md={6} lg={5}>
+                        <Card 
+                            elevation={3}
+                            sx={{
+                                height: '100%',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                position: 'relative',
+                                overflow: 'visible'
+                            }}
                         >
-                            Torna alla Home
-                        </Button>
-                    </Box>
-                </Alert>
-            )}
-
-            {!successMessage && (
-                <>
-                    <Box sx={{ textAlign: 'center', mb: 4 }}>
-                        <Typography variant="h6" color="text.secondary">
-                            Scegli il piano più adatto alle tue esigenze
-                        </Typography>
-                        <Typography variant="body1" color="text.secondary">
-                            Tutti i piani includono supporto tecnico e aggiornamenti regolari
-                        </Typography>
-                    </Box>
-
-                    <Grid container spacing={4} justifyContent="center">
-                        {plans.map((plan) => (
-                            <Grid item xs={12} md={4} key={plan.id}>
-                                <Card 
-                                    sx={{ 
-                                        height: '100%', 
-                                        display: 'flex', 
-                                        flexDirection: 'column',
-                                        transition: 'all 0.3s ease',
-                                        cursor: 'pointer',
-                                        borderRadius: 2,
-                                        overflow: 'hidden',
-                                        boxShadow: selectedPlan === plan.id ? 8 : 2,
-                                        ...(selectedPlan === plan.id && {
-                                            transform: 'scale(1.02)',
-                                            border: '2px solid',
-                                            borderColor: plan.color
-                                        }),
-                                        '&:hover': {
-                                            boxShadow: 5,
-                                            transform: 'translateY(-8px)'
-                                        }
-                                    }}
-                                    onClick={() => setSelectedPlan(plan.id)}
-                                >
-                                    <Box sx={{ 
-                                        bgcolor: plan.color, 
-                                        color: 'white', 
-                                        py: 1,
-                                        px: 2,
-                                        position: 'relative'
-                                    }}>
-                                        <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
-                                            {plan.name}
-                                        </Typography>
-                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                            <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                                                {plan.description}
-                                            </Typography>
-                                            {plan.popular && (
-                                                <Typography 
-                                                    variant="caption" 
-                                                    sx={{ 
-                                                        ml: 1, 
-                                                        bgcolor: 'rgba(255,255,255,0.2)', 
-                                                        px: 1, 
-                                                        py: 0.5, 
-                                                        borderRadius: 1,
-                                                        fontWeight: 'bold',
-                                                        border: '1px solid rgba(255,255,255,0.5)'
-                                                    }}
-                                                >
-                                                    Più Popolare
-                                                </Typography>
-                                            )}
-                                        </Box>
-                                    </Box>
-                                    
-                                    <CardContent sx={{ flexGrow: 1, px: 3, pt: 3 }}>
-                                        <Typography variant="h4" sx={{ color: plan.color, fontWeight: 'bold', mb: 2 }}>
-                                            {plan.amount === 0 ? 'Gratuito' : `€${(plan.amount / 100).toFixed(2)}`}
-                                            {plan.amount > 0 && (
-                                                <Typography component="span" variant="subtitle1" color="text.secondary">
-                                                    /{plan.interval === 'month' ? 'mese' : 'anno'}
-                                                </Typography>
-                                            )}
-                                        </Typography>
-                                        
-                                        <Box sx={{ mt: 2 }}>
-                                            {plan.features.map((feature, index) => (
-                                                <Box key={index} sx={{ 
-                                                    display: 'flex', 
-                                                    alignItems: 'center',
-                                                    mb: 1,
-                                                    py: 0.5
-                                                }}>
-                                                    <Box 
-                                                        sx={{ 
-                                                            width: 6, 
-                                                            height: 6, 
-                                                            bgcolor: plan.color,
-                                                            borderRadius: '50%',
-                                                            mr: 1.5
-                                                        }} 
-                                                    />
-                                                    <Typography variant="body2" color="text.secondary">
-                                                        {feature}
-                                                    </Typography>
-                                                </Box>
-                                            ))}
-                                        </Box>
-                                    </CardContent>
-                                    
-                                    <CardActions sx={{ p: 3, pt: 0 }}>
-                                        <Button
-                                            fullWidth
-                                            variant={selectedPlan === plan.id ? "contained" : "outlined"}
-                                            sx={{
-                                                borderRadius: 2,
-                                                py: 1,
-                                                ...(selectedPlan === plan.id ? {
-                                                    bgcolor: plan.color,
-                                                    '&:hover': {
-                                                        bgcolor: plan.color
-                                                    }
-                                                } : {
-                                                    color: plan.color,
-                                                    borderColor: plan.color,
-                                                    '&:hover': {
-                                                        borderColor: plan.color
-                                                    }
-                                                })
-                                            }}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleSubscribe(plan);
-                                            }}
-                                            disabled={loading}
-                                        >
-                                            {plan.amount === 0 
-                                                ? (selectedPlan === plan.id ? "Piano Selezionato" : "Inizia Gratuitamente") 
-                                                : (selectedPlan === plan.id ? "Piano Selezionato" : "Seleziona Piano")}
-                                        </Button>
-                                    </CardActions>
-                                </Card>
-                            </Grid>
-                        ))}
+                            <CardContent sx={{ flexGrow: 1, p: 4 }}>
+                                <Typography variant="h5" component="h2" fontWeight="bold" gutterBottom>
+                                    Piano Mensile
+                                </Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'baseline', mb: 3 }}>
+                                    <Typography variant="h3" component="span" fontWeight="bold">
+                                        {formatPrice(plans?.monthly?.amount || 2999)}
+                                    </Typography>
+                                    <Typography variant="subtitle1" component="span" ml={1}>
+                                        /mese
+                                    </Typography>
+                                </Box>
+                                
+                                <Divider sx={{ my: 2 }} />
+                                
+                                <List>
+                                    {features.map((feature, index) => (
+                                        <ListItem key={index} disableGutters sx={{ py: 1 }}>
+                                            <ListItemIcon sx={{ minWidth: 40 }}>
+                                                <CheckIcon color="primary" />
+                                            </ListItemIcon>
+                                            <ListItemText primary={feature} />
+                                        </ListItem>
+                                    ))}
+                                </List>
+                            </CardContent>
+                            
+                            <CardActions sx={{ p: 4, pt: 0 }}>
+                                <StripeCheckoutButton
+                                    planId="monthly"
+                                    buttonText="Abbonati Mensilmente"
+                                    fullWidth
+                                    size="large"
+                                />
+                            </CardActions>
+                        </Card>
                     </Grid>
-                </>
+                    
+                    {/* Piano Annuale */}
+                    <Grid item xs={12} md={6} lg={5}>
+                        <Card 
+                            elevation={4}
+                            sx={{
+                                height: '100%',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                position: 'relative',
+                                overflow: 'visible',
+                                border: '2px solid',
+                                borderColor: 'primary.main',
+                            }}
+                        >
+                            <Box 
+                                sx={{
+                                    position: 'absolute',
+                                    top: -12,
+                                    right: 24,
+                                    backgroundColor: 'primary.main',
+                                    color: 'white',
+                                    px: 2,
+                                    py: 0.5,
+                                    borderRadius: 1,
+                                    fontSize: '0.875rem',
+                                    fontWeight: 'bold',
+                                    zIndex: 1,
+                                }}
+                            >
+                                CONSIGLIATO
+                            </Box>
+                            
+                            <CardContent sx={{ flexGrow: 1, p: 4 }}>
+                                <Typography variant="h5" component="h2" fontWeight="bold" gutterBottom>
+                                    Piano Annuale
+                                </Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'baseline', mb: 3 }}>
+                                    <Typography variant="h3" component="span" fontWeight="bold">
+                                        {formatPrice(plans?.annual?.amount || 29900)}
+                                    </Typography>
+                                    <Typography variant="subtitle1" component="span" ml={1}>
+                                        /anno
+                                    </Typography>
+                                </Box>
+                                <Typography variant="subtitle2" color="primary.main" sx={{ mb: 3 }}>
+                                    Risparmia il 20% rispetto al piano mensile!
+                                </Typography>
+                                
+                                <Divider sx={{ my: 2 }} />
+                                
+                                <List>
+                                    {features.map((feature, index) => (
+                                        <ListItem key={index} disableGutters sx={{ py: 1 }}>
+                                            <ListItemIcon sx={{ minWidth: 40 }}>
+                                                <CheckIcon color="primary" />
+                                            </ListItemIcon>
+                                            <ListItemText primary={feature} />
+                                        </ListItem>
+                                    ))}
+                                </List>
+                            </CardContent>
+                            
+                            <CardActions sx={{ p: 4, pt: 0 }}>
+                                <StripeCheckoutButton
+                                    planId="annual"
+                                    buttonText="Abbonati Annualmente"
+                                    fullWidth
+                                    size="large"
+                                    variant="contained"
+                                />
+                            </CardActions>
+                        </Card>
+                    </Grid>
+                </Grid>
             )}
+            
+            <Box sx={{ mt: 8, p: 4, bgcolor: 'background.paper', borderRadius: 2 }}>
+                <Typography variant="h5" component="h3" gutterBottom>
+                    Domande Frequenti
+                </Typography>
+                <Grid container spacing={3} mt={2}>
+                    <Grid item xs={12} md={6}>
+                        <Typography variant="subtitle1" fontWeight="bold">
+                            Come funziona il pagamento?
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" paragraph>
+                            I pagamenti vengono elaborati in modo sicuro tramite Stripe. Accettiamo tutte le principali carte di credito.
+                        </Typography>
+                        
+                        <Typography variant="subtitle1" fontWeight="bold">
+                            Posso disdire in qualsiasi momento?
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            Sì, puoi annullare il tuo abbonamento in qualsiasi momento dalla tua area personale.
+                        </Typography>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                        <Typography variant="subtitle1" fontWeight="bold">
+                            È previsto un periodo di prova?
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" paragraph>
+                            Al momento non offriamo periodi di prova, ma garantiamo un rimborso completo entro 14 giorni se non sei soddisfatto.
+                        </Typography>
+                        
+                        <Typography variant="subtitle1" fontWeight="bold">
+                            Come posso ottenere assistenza?
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            Per qualsiasi domanda relativa agli abbonamenti, contattaci via email a supporto@edilconnect.it o tramite la sezione Assistenza.
+                        </Typography>
+                    </Grid>
+                </Grid>
+            </Box>
         </Container>
     );
 };

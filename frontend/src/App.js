@@ -14,6 +14,9 @@ import Profile from './pages/Profile';
 import VerifyEmail from './pages/VerifyEmail';
 import AdminPanel from './pages/AdminPanel';
 import Subscription from './pages/Subscription';
+import SubscriptionSuccess from './pages/SubscriptionSuccess';
+import SubscriptionCancel from './pages/SubscriptionCancel';
+import TestLogin from './pages/TestLogin';
 import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
 import FloatingAvatar from './components/FloatingAvatar';
@@ -44,6 +47,9 @@ function AppContent() {
                 <Route path="/register" element={<Register />} />
                 <Route path="/verify-email" element={<VerifyEmail />} />
                 <Route path="/subscription" element={<Subscription />} />
+                <Route path="/subscription/success" element={<SubscriptionSuccess />} />
+                <Route path="/subscription/cancel" element={<SubscriptionCancel />} />
+                <Route path="/test-login" element={<TestLogin />} />
                 
                 {/* Protected Routes */}
                 <Route path="/dashboard" element={
