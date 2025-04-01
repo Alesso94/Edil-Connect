@@ -22,10 +22,10 @@ const TestLogin = () => {
       const backendUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       console.log('URL del backend:', backendUrl);
 
-      const response = await axios.post(`${backendUrl}/api/users/debug-login`, {
-        email,
-        password
-      });
+      const response = await axios.post(`${backendUrl}/api/users/debug-auth`, {
+    email,
+    password
+  });
 
       console.log('Risposta debug login:', response.data);
       setSuccess('Login di debug riuscito!');
