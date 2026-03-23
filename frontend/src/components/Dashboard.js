@@ -99,7 +99,7 @@ const Dashboard = () => {
           return;
         }
         
-        const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/projects`, {
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/projects`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

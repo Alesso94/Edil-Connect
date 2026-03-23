@@ -17,7 +17,7 @@ const Profile = () => {
     const fetchUserData = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/users/me`, {
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/users/me`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -50,7 +50,7 @@ const Profile = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.patch(`${process.env.REACT_APP_BACKEND_URL}/api/users/me`, formData, {
+      const response = await axios.patch(`${import.meta.env.VITE_BACKEND_URL}/api/users/me`, formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUser(response.data);

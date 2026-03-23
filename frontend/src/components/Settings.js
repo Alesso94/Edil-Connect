@@ -54,7 +54,7 @@ function Settings() {
             }
 
             console.log('Richiesta impostazioni con token:', token);
-            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/settings`, {
+            const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/settings`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -106,7 +106,7 @@ function Settings() {
             }
 
             console.log('Invio aggiornamento impostazioni:', settings);
-            const response = await axios.put(`${process.env.REACT_APP_BACKEND_URL}/api/settings`, settings, {
+            const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/settings`, settings, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }

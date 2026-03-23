@@ -25,7 +25,7 @@ const Profile = () => {
         try {
             const token = localStorage.getItem('token');
             const response = await axios.get(
-                `${process.env.REACT_APP_BACKEND_URL}/api/users/profile`,
+                `${import.meta.env.VITE_BACKEND_URL}/api/users/profile`,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             setUser(response.data);
@@ -40,7 +40,7 @@ const Profile = () => {
         try {
             const token = localStorage.getItem('token');
             await axios.put(
-                `${process.env.REACT_APP_BACKEND_URL}/api/users/profile`,
+                `${import.meta.env.VITE_BACKEND_URL}/api/users/profile`,
                 user,
                 { headers: { Authorization: `Bearer ${token}` } }
             );

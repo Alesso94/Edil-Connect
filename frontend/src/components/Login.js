@@ -16,7 +16,7 @@ const Login = () => {
       try {
         setApiStatus('checking');
         // backend health check
-        await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api`);
+        await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api`);
         setApiStatus('online');
       } catch (err) {
         console.error('Backend non raggiungibile:', err);
@@ -43,7 +43,7 @@ const Login = () => {
         throw new Error('Il server backend non è raggiungibile. Riprova più tardi.');
       }
       
-      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/auth/login`, { email, password });
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/auth/login`, { email, password });
       setSuccessMsg('Login riuscito! Reindirizzamento...');
       localStorage.setItem('token', response.data.token);
       
