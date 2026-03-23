@@ -69,7 +69,12 @@ router.post('/', async (req, res) => {
 router.get('/verify-email', async (req, res) => {
     try {
         const { token } = req.query;
-        
+
+        // Validate token: must be a non-empty alphanumeric/hex string (max 128 chars)
+        if (!token || typeof token !== 'string' || !/^[a-zA-Z0-9_-]{1,128}$/.test(token)) {
+            return res.status(400).json({ message: 'Token di verifica non valido' });
+        }
+
         const user = await User.findOne({
             verificationToken: token,
             verificationTokenExpires: { $gt: Date.now() },
@@ -97,7 +102,12 @@ router.get('/verify-email', async (req, res) => {
 router.post('/resend-verification', async (req, res) => {
     try {
         const { email } = req.body;
-        
+
+        // Validate email format before using in DB query
+        if (!email || typeof email !== 'string' || !/^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,}$/.test(email)) {
+            return res.status(400).json({ message: 'Email non valida' });
+        }
+
         const user = await User.findOne({ email, isVerified: false });
         
         if (!user) {

@@ -12,17 +12,35 @@ const professionalAuth = require('../middleware/professionalAuth');
 // Helper: validate MongoDB ObjectId to prevent injection via malformed IDs
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
+// Base uploads directory (absolute, used for path traversal checks)
+const UPLOADS_DIR = path.resolve(__dirname, '..', 'uploads');
+
+// Safe unlink: only delete files that are inside UPLOADS_DIR
+const safeUnlink = (filePath) => {
+  if (!filePath) return;
+  const resolved = path.resolve(filePath);
+  if (resolved.startsWith(UPLOADS_DIR + path.sep)) {
+    fs.unlinkSync(resolved);
+  }
+};
+
 // Configurazione di multer per l'upload dei file
 const storage = multer.diskStorage({
   destination: function(req, file, cb) {
     const projectId = req.params.projectId;
-    const dir = `./uploads/${projectId}`;
-    
+    // Reject non-ObjectId values before constructing any path
+    if (!mongoose.Types.ObjectId.isValid(projectId)) {
+      return cb(new Error('ID progetto non valido'));
+    }
+    const dir = path.resolve(UPLOADS_DIR, projectId);
+    // Guard: ensure resolved dir stays within UPLOADS_DIR
+    if (!dir.startsWith(UPLOADS_DIR + path.sep)) {
+      return cb(new Error('Path non valido'));
+    }
     // Crea la cartella del progetto se non esiste
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    
     cb(null, dir);
   },
   filename: function(req, file, cb) {
@@ -68,7 +86,7 @@ router.post('/:projectId/upload', professionalAuth, upload.single('file'), async
   try {
     const projectId = req.params.projectId;
     if (!isValidObjectId(projectId)) {
-      if (req.file) fs.unlinkSync(req.file.path);
+      if (req.file) safeUnlink(req.file.path);
       return res.status(400).json({ message: 'ID progetto non valido' });
     }
     
@@ -77,7 +95,7 @@ router.post('/:projectId/upload', professionalAuth, upload.single('file'), async
     if (!project) {
       // Elimina il file se il progetto non esiste
       if (req.file) {
-        fs.unlinkSync(req.file.path);
+        safeUnlink(req.file.path);
       }
       return res.status(404).json({ message: "Progetto non trovato" });
     }
@@ -87,7 +105,7 @@ router.post('/:projectId/upload', professionalAuth, upload.single('file'), async
         !project.collaborators.includes(req.user._id)) {
       // Elimina il file se l'utente non è autorizzato
       if (req.file) {
-        fs.unlinkSync(req.file.path);
+        safeUnlink(req.file.path);
       }
       return res.status(403).json({ message: "Non autorizzato" });
     }
@@ -115,7 +133,7 @@ router.post('/:projectId/upload', professionalAuth, upload.single('file'), async
   } catch (error) {
     // Elimina il file in caso di errore
     if (req.file) {
-      fs.unlinkSync(req.file.path);
+      safeUnlink(req.file.path);
     }
     console.error('Errore upload documento:', error);
     res.status(500).json({ message: 'Errore durante il caricamento del documento' });
@@ -221,9 +239,10 @@ router.delete('/:projectId/document/:documentId', professionalAuth, async (req, 
       return res.status(403).json({ message: "Non autorizzato" });
     }
     
-    // Elimina il file dal filesystem
-    if (fs.existsSync(document.path)) {
-      fs.unlinkSync(document.path);
+    // Elimina il file dal filesystem (path traversal guard via safeUnlink)
+    const resolvedDocPath = path.resolve(document.path);
+    if (resolvedDocPath.startsWith(UPLOADS_DIR + path.sep) && fs.existsSync(resolvedDocPath)) {
+      fs.unlinkSync(resolvedDocPath);
     }
     
     // Elimina il documento dal database

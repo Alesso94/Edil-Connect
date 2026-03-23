@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const rateLimit = require('express-rate-limit');
 const Professional = require('./models/Professional');
 
 const app = express();
@@ -8,6 +9,15 @@ const port = 3002;
 
 app.use(cors());
 app.use(express.json());
+
+// Rate limiting for all /api routes
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/', apiLimiter);
 
 // Route di test
 app.get('/test', (req, res) => {
