@@ -3,8 +3,8 @@ import axios from 'axios';
 import './Auth.css';
 
 const Login = () => {
-  const [email, setEmail] = useState('admin@edilconnect.it');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading] = useState(false);
@@ -15,11 +15,9 @@ const Login = () => {
     const checkBackendStatus = async () => {
       try {
         setApiStatus('checking');
-        console.log('Controllo se il backend è raggiungibile...');
-        console.log('Backend URL:', process.env.REACT_APP_BACKEND_URL);
+        // backend health check
         await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api`);
         setApiStatus('online');
-        console.log('Backend online');
       } catch (err) {
         console.error('Backend non raggiungibile:', err);
         setApiStatus('offline');
@@ -40,15 +38,12 @@ const Login = () => {
     setLoading(true);
 
     try {
-      console.log('Tentativo di login con:', { email, password });
-      
       // Controllo diretto del backend
       if (apiStatus !== 'online') {
         throw new Error('Il server backend non è raggiungibile. Riprova più tardi.');
       }
       
       const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/auth/login`, { email, password });
-      console.log('Risposta dal server:', response.data);
       setSuccessMsg('Login riuscito! Reindirizzamento...');
       localStorage.setItem('token', response.data.token);
       
@@ -62,7 +57,6 @@ const Login = () => {
       
       if (err.response) {
         // Il server ha risposto con uno stato diverso da 2xx
-        console.error('Risposta di errore dal server:', err.response.data);
         setError(err.response.data.message || 'Login fallito. Controlla email e password.');
       } else if (err.request) {
         // La richiesta è stata fatta ma non è stata ricevuta alcuna risposta
@@ -75,15 +69,6 @@ const Login = () => {
     }
   };
 
-  // Funzione per il login diretto con credenziali di test
-  const handleTestLogin = () => {
-    setEmail('admin@edilconnect.it');
-    setPassword('password123');
-    // Autologin dopo un breve timeout
-    setTimeout(() => {
-      document.querySelector('form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-    }, 500);
-  };
 
   return (
     <div className="auth-container">
@@ -125,21 +110,6 @@ const Login = () => {
             {loading ? 'Accesso in corso...' : 'Accedi'}
           </button>
         </form>
-        
-        <div className="test-login-section">
-          <p>Accedi con le credenziali di test:</p>
-          <button 
-            className="test-login-button" 
-            onClick={handleTestLogin}
-            disabled={loading || apiStatus === 'offline'}
-          >
-            Accedi come utente test
-          </button>
-          <div className="test-credentials">
-            <p>Email: admin@edilconnect.it</p>
-            <p>Password: password123</p>
-          </div>
-        </div>
         
         <p className="toggle-auth">
           Non hai un account? 

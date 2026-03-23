@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import './Auth.css';
 
-console.log('Backend URL:', process.env.REACT_APP_BACKEND_URL);
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -22,9 +21,7 @@ const Auth = () => {
     setSuccess(false);
 
     try {
-      console.log('Backend URL:', process.env.REACT_APP_BACKEND_URL);
-      console.log('Dati inviati:', { email, password, name, profession, license, adminCode });
-
+      
       const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/users`, {
         email,
         password,
@@ -34,7 +31,6 @@ const Auth = () => {
         adminCode: adminCode || undefined
       });
 
-      console.log('Risposta dal server:', response.data);
       setSuccess(true);
 
       // Salva il token nel localStorage
