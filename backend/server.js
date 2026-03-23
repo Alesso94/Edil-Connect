@@ -8,6 +8,10 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const mongoose = require('mongoose');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const mongoSanitize = require('express-mongo-sanitize');
+const xssClean = require('xss-clean');
 
 // Import Models
 const User = require('./models/User');
@@ -25,6 +29,28 @@ const app = express();
 const port = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET;
 const MONGODB_URI = process.env.MONGODB_URI;
+
+// Security headers
+app.use(helmet());
+
+// Global rate limiter (100 req per 15 min per IP)
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Troppe richieste, riprova più tardi' }
+});
+app.use(globalLimiter);
+
+// Strict rate limiter for auth endpoints (20 req per 15 min per IP)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Troppi tentativi di autenticazione, riprova più tardi' }
+});
 
 // Logging middleware
 app.use((req, res, next) => {
@@ -116,15 +142,26 @@ app.use((req, res, next) => {
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 
+// Sanitize MongoDB query operators (NoSQL injection protection)
+app.use(mongoSanitize());
+
+// Sanitize HTML/JS in request body (XSS protection)
+app.use(xssClean());
+
 // Configurazione storage per i file
+const ALLOWED_UPLOAD_TYPES = ['documents', 'cad'];
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         const type = req.params.type || 'documents';
-        const dir = path.join(__dirname, 'uploads', type);
+        // Whitelist validation to prevent path traversal
+        const safeType = ALLOWED_UPLOAD_TYPES.includes(type) ? type : 'documents';
+        const dir = path.join(__dirname, 'uploads', safeType);
         cb(null, dir);
     },
     filename: function (req, file, cb) {
-        cb(null, Date.now() + '-' + file.originalname);
+        // Randomize filename; preserve only the extension from original
+        const ext = path.extname(file.originalname).replace(/[^a-zA-Z0-9.]/g, '');
+        cb(null, Date.now() + '-' + Math.round(Math.random() * 1e9) + ext);
     }
 });
 
@@ -136,14 +173,14 @@ const upload = multer({
 });
 
 // Routes
-app.use('/api/users', usersRoutes);
+app.use('/api/users', authLimiter, usersRoutes);
 app.use('/api/projects', projectsRoutes);
 app.use('/api/documents', documentsRoutes);
 app.use('/api/professionals', professionalsRoutes);
 app.use('/api/settings', settingsRoutes);
 
 // Aggiungi alias per le route di autenticazione
-app.use('/api/auth', usersRoutes);
+app.use('/api/auth', authLimiter, usersRoutes);
 
 // Endpoint base /api
 app.get('/api', (req, res) => {
@@ -204,7 +241,7 @@ const server = app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on http://0.0.0.0:${port}`);
   console.log('Ambiente:', process.env.NODE_ENV || 'development');
   console.log('CORS origins:', corsOptions.origin);
-  console.log('MongoDB URI:', MONGODB_URI);
+  console.log('MongoDB URI:', MONGODB_URI ? '[configurato]' : '[non configurato]');
   console.log('JWT Secret:', JWT_SECRET ? 'Presente' : 'Non presente');
 });
 
