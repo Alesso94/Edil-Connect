@@ -3,10 +3,14 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const mongoose = require('mongoose');
 const Document = require('../models/Document');
 const Project = require('../models/Project');
 const auth = require('../middleware/auth');
 const professionalAuth = require('../middleware/professionalAuth');
+
+// Helper: validate MongoDB ObjectId to prevent injection via malformed IDs
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 // Configurazione di multer per l'upload dei file
 const storage = multer.diskStorage({
@@ -63,6 +67,10 @@ const upload = multer({
 router.post('/:projectId/upload', professionalAuth, upload.single('file'), async (req, res) => {
   try {
     const projectId = req.params.projectId;
+    if (!isValidObjectId(projectId)) {
+      if (req.file) fs.unlinkSync(req.file.path);
+      return res.status(400).json({ message: 'ID progetto non valido' });
+    }
     
     // Verifica che il progetto esista
     const project = await Project.findById(projectId);
@@ -109,7 +117,8 @@ router.post('/:projectId/upload', professionalAuth, upload.single('file'), async
     if (req.file) {
       fs.unlinkSync(req.file.path);
     }
-    res.status(500).json({ message: error.message });
+    console.error('Errore upload documento:', error);
+    res.status(500).json({ message: 'Errore durante il caricamento del documento' });
   }
 });
 
@@ -117,6 +126,9 @@ router.post('/:projectId/upload', professionalAuth, upload.single('file'), async
 router.get('/:projectId', professionalAuth, async (req, res) => {
   try {
     const projectId = req.params.projectId;
+    if (!isValidObjectId(projectId)) {
+      return res.status(400).json({ message: 'ID progetto non valido' });
+    }
     
     // Verifica che il progetto esista
     const project = await Project.findById(projectId);
@@ -134,10 +146,11 @@ router.get('/:projectId', professionalAuth, async (req, res) => {
     const documents = await Document.find({ project: projectId })
                                    .populate('uploadedBy', 'name email')
                                    .sort({ createdAt: -1 });
-    
+
     res.json(documents);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Errore recupero documenti:', error);
+    res.status(500).json({ message: 'Errore durante il recupero dei documenti' });
   }
 });
 
@@ -145,6 +158,9 @@ router.get('/:projectId', professionalAuth, async (req, res) => {
 router.get('/:projectId/download/:documentId', professionalAuth, async (req, res) => {
   try {
     const { projectId, documentId } = req.params;
+    if (!isValidObjectId(projectId) || !isValidObjectId(documentId)) {
+      return res.status(400).json({ message: 'ID non valido' });
+    }
     
     // Verifica che il documento esista
     const document = await Document.findById(documentId);
@@ -164,10 +180,18 @@ router.get('/:projectId/download/:documentId', professionalAuth, async (req, res
       return res.status(403).json({ message: "Non autorizzato" });
     }
     
+    // Resolve absolute path and verify it stays within the uploads directory
+    const uploadsDir = path.resolve(__dirname, '..', 'uploads');
+    const filePath = path.resolve(document.path);
+    if (!filePath.startsWith(uploadsDir)) {
+      return res.status(403).json({ message: 'Accesso al file non consentito' });
+    }
+
     // Invia il file
-    res.download(document.path, document.originalName);
+    res.download(filePath, document.originalName);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Errore download documento:', error);
+    res.status(500).json({ message: 'Errore durante il download del documento' });
   }
 });
 
@@ -175,6 +199,9 @@ router.get('/:projectId/download/:documentId', professionalAuth, async (req, res
 router.delete('/:projectId/document/:documentId', professionalAuth, async (req, res) => {
   try {
     const { projectId, documentId } = req.params;
+    if (!isValidObjectId(projectId) || !isValidObjectId(documentId)) {
+      return res.status(400).json({ message: 'ID non valido' });
+    }
     
     // Verifica che il documento esista
     const document = await Document.findById(documentId);
@@ -204,7 +231,8 @@ router.delete('/:projectId/document/:documentId', professionalAuth, async (req, 
     
     res.json({ message: "Documento eliminato con successo" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Errore eliminazione documento:', error);
+    res.status(500).json({ message: 'Errore durante l\'eliminazione del documento' });
   }
 });
 

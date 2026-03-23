@@ -7,12 +7,12 @@ const { generateVerificationToken, sendVerificationEmail } = require('../utils/e
 // POST /api/users - Registrazione
 router.post('/', async (req, res) => {
     try {
-        console.log('Richiesta di registrazione ricevuta:', req.body);
+        console.log('Richiesta di registrazione ricevuta');
         const userData = { ...req.body };
         
         // Verifica se è richiesta la registrazione come admin
         if (userData.adminCode) {
-            console.log('Codice admin fornito:', userData.adminCode);
+            console.log('Codice admin fornito');
             if (userData.adminCode === process.env.ADMIN_CODE) {
                 console.log('Codice admin valido, registrazione come admin');
                 userData.isAdmin = true;
@@ -59,10 +59,8 @@ router.post('/', async (req, res) => {
         });
     } catch (error) {
         console.error('Errore dettagliato durante la registrazione:', error);
-        res.status(400).json({ 
-            message: 'Errore nella registrazione',
-            error: error.message,
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        res.status(400).json({
+            message: process.env.NODE_ENV === 'development' ? error.message : 'Errore nella registrazione'
         });
     }
 });
@@ -146,9 +144,8 @@ router.post('/login', async (req, res) => {
         });
     } catch (error) {
         console.error('Errore durante il login:', error.message);
-        res.status(401).json({ 
-            message: error.message,
-            error: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        res.status(401).json({
+            message: process.env.NODE_ENV === 'development' ? error.message : 'Credenziali non valide'
         });
     }
 });

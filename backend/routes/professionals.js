@@ -37,7 +37,7 @@ router.post('/register', auth, async (req, res) => {
     });
   } catch (error) {
     console.error('Errore nella registrazione del professionista:', error);
-    res.status(500).json({ message: 'Errore del server', error: error.message });
+    res.status(500).json({ message: 'Errore del server' });
   }
 });
 
@@ -46,9 +46,9 @@ router.get('/check', auth, async (req, res) => {
   try {
     const professional = await Professional.findOne({ user: req.user.id });
     if (!professional) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         isProfessional: false,
-        message: 'Non sei registrato come professionista' 
+        message: 'Non sei registrato come professionista'
       });
     }
 
@@ -59,7 +59,7 @@ router.get('/check', auth, async (req, res) => {
     });
   } catch (error) {
     console.error('Errore nella verifica del professionista:', error);
-    res.status(500).json({ message: 'Errore del server', error: error.message });
+    res.status(500).json({ message: 'Errore del server' });
   }
 });
 
@@ -69,11 +69,11 @@ router.get('/', async (req, res) => {
     const professionals = await Professional.find({ isVerified: true })
       .populate('user', 'name email')
       .select('-__v');
-    
+
     res.json(professionals);
   } catch (error) {
     console.error('Errore nel recupero dei professionisti:', error);
-    res.status(500).json({ message: 'Errore del server', error: error.message });
+    res.status(500).json({ message: 'Errore del server' });
   }
 });
 
@@ -83,7 +83,7 @@ router.get('/:id', async (req, res) => {
     const professional = await Professional.findById(req.params.id)
       .populate('user', 'name email')
       .select('-__v');
-    
+
     if (!professional) {
       return res.status(404).json({ message: 'Professionista non trovato' });
     }
@@ -91,7 +91,7 @@ router.get('/:id', async (req, res) => {
     res.json(professional);
   } catch (error) {
     console.error('Errore nel recupero del professionista:', error);
-    res.status(500).json({ message: 'Errore del server', error: error.message });
+    res.status(500).json({ message: 'Errore del server' });
   }
 });
 
@@ -125,7 +125,7 @@ router.put('/profile', auth, async (req, res) => {
     });
   } catch (error) {
     console.error('Errore nell\'aggiornamento del profilo:', error);
-    res.status(500).json({ message: 'Errore del server', error: error.message });
+    res.status(500).json({ message: 'Errore del server' });
   }
 });
 
@@ -151,7 +151,7 @@ router.put('/:id/verify', auth, adminAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('Errore nella verifica del professionista:', error);
-    res.status(500).json({ message: 'Errore del server', error: error.message });
+    res.status(500).json({ message: 'Errore del server' });
   }
 });
 
@@ -161,11 +161,11 @@ router.get('/admin/pending', auth, adminAuth, async (req, res) => {
     const pendingProfessionals = await Professional.find({ isVerified: false })
       .populate('user', 'name email')
       .select('-__v');
-    
+
     res.json(pendingProfessionals);
   } catch (error) {
     console.error('Errore nel recupero dei professionisti in attesa:', error);
-    res.status(500).json({ message: 'Errore del server', error: error.message });
+    res.status(500).json({ message: 'Errore del server' });
   }
 });
 
@@ -173,19 +173,26 @@ router.get('/admin/pending', auth, adminAuth, async (req, res) => {
 router.get('/search/specialization', async (req, res) => {
   try {
     const { specialization } = req.query;
-    if (!specialization) {
+    if (!specialization || typeof specialization !== 'string') {
       return res.status(400).json({ message: 'Parametro di ricerca mancante' });
     }
 
+    // Escape regex metacharacters to prevent ReDoS
+    const escaped = specialization.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Limit length to prevent excessively long queries
+    if (escaped.length > 100) {
+      return res.status(400).json({ message: 'Parametro di ricerca troppo lungo' });
+    }
+
     const professionals = await Professional.find({
-      specializations: { $regex: specialization, $options: 'i' },
+      specializations: { $regex: escaped, $options: 'i' },
       isVerified: true
     }).populate('user', 'name email');
 
     res.json(professionals);
   } catch (error) {
     console.error('Errore nella ricerca dei professionisti:', error);
-    res.status(500).json({ message: 'Errore del server', error: error.message });
+    res.status(500).json({ message: 'Errore del server' });
   }
 });
 
@@ -207,7 +214,7 @@ router.delete('/:id', auth, async (req, res) => {
     res.json({ message: 'Profilo professionista eliminato con successo' });
   } catch (error) {
     console.error('Errore nell\'eliminazione del professionista:', error);
-    res.status(500).json({ message: 'Errore del server', error: error.message });
+    res.status(500).json({ message: 'Errore del server' });
   }
 });
 

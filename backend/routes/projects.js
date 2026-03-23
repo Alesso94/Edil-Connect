@@ -14,7 +14,8 @@ router.get('/', auth, async (req, res) => {
         }).populate('owner', 'email name profession');
         res.json(projects);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Errore recupero progetti:', error);
+        res.status(500).json({ message: 'Errore durante il recupero dei progetti' });
     }
 });
 
@@ -29,7 +30,8 @@ router.post('/', auth, async (req, res) => {
         const newProject = await project.save();
         res.status(201).json(newProject);
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        console.error('Errore creazione progetto:', error);
+        res.status(400).json({ message: 'Errore durante la creazione del progetto' });
     }
 });
 
@@ -61,7 +63,8 @@ router.post('/:projectId/task', auth, async (req, res) => {
 
         res.status(201).json(project);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Errore aggiunta task:', error);
+        res.status(500).json({ message: 'Errore durante l\'aggiunta del task' });
     }
 });
 
@@ -84,7 +87,8 @@ router.get('/:id', auth, async (req, res) => {
 
         res.json(project);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Errore recupero progetto:', error);
+        res.status(500).json({ message: 'Errore durante il recupero del progetto' });
     }
 });
 
@@ -116,7 +120,8 @@ router.put('/:projectId/collaborator', auth, async (req, res) => {
     
     res.json(project);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Errore aggiunta collaboratore:', error);
+    res.status(500).json({ message: 'Errore durante l\'aggiunta del collaboratore' });
   }
 });
 
