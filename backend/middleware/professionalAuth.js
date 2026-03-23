@@ -47,7 +47,7 @@ const professionalAuth = async (req, res, next) => {
         if (error.name === 'TokenExpiredError') {
             return res.status(401).json({ message: 'Token scaduto' });
         }
-        res.status(500).json({ message: 'Errore del server', error: error.message });
+        res.status(500).json({ message: 'Errore del server' });
     }
 };
 
